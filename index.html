@@ -1,0 +1,1480 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>I-CAR выездной автосервис</title>
+<meta name="description" content="Выездной автосервис I-CAR: диагностика, эвакуатор, шиномонтаж, замена масла, вскрытие замков. Приедем от 20 минут, круглосуточно.">
+
+<script>
+/* ==========================================================================
+   КОНСТАНТЫ САЙТА — ЗАМЕНИТЬ НА РЕАЛЬНЫЕ ДАННЫЕ
+   Всё, что ниже, автоматически подставляется во все места страницы.
+   ========================================================================== */
+const SITE = {
+  phone:      '+7 (XXX) XXX-XX-XX',          // номер для показа
+  phoneHref:  '+7XXXXXXXXXX',                // тот же номер без пробелов — для tel:
+  whatsapp:   'https://wa.me/7XXXXXXXXXX',   // ссылка на WhatsApp
+  telegram:   'https://t.me/XXXXXXXX',       // ссылка на Telegram
+  city:       '[ГОРОД]',                     // город
+  zone:       '[ГОРОД] и пригород — до [XX] км', // зона выезда
+  address:    '[АДРЕС БАЗЫ]',                // адрес
+  hours:      'Круглосуточно, без выходных',
+
+  intro: true,      // заставка при загрузке (машина → буквы I-CAR → колесо)
+
+  // 3D-модель машины. Пусто — встроенная Lada Niva 4x4 (собрана в app3d.js).
+  // Можно указать путь к своей модели .glb (положите файл рядом с сайтом) —
+  // она автоматически отмасштабируется и встанет на подиум.
+  carModel: '',
+
+  /* ЦИФРЫ (блок «Цифры»): value анимируется счётчиком, prefix/suffix — статичны. */
+  stats: [
+    { prefix: '',   value: 24,   decimals: 0, suffix: '/7',  label: 'работаем круглосуточно' },
+    { prefix: 'от', value: 20,   decimals: 0, suffix: 'мин', label: 'среднее время подачи' },
+    { prefix: '>',  value: 1000, decimals: 0, suffix: '',    label: 'выездов' },
+    { prefix: '',   value: 4.9,  decimals: 1, suffix: '',    label: 'рейтинг клиентов' }
+  ]
+};
+(function () {
+  const h = document.documentElement;
+  h.classList.add('js');
+  if (SITE.intro && !matchMedia('(prefers-reduced-motion: reduce)').matches) h.classList.add('has-intro', 'intro-lock');
+})();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ===== ПАЛИТРА — меняется здесь ===== */
+:root{
+  --bg:#0A0A0C;
+  --bg-2:#111115;
+  --accent:#39FF6A;
+  --accent-2:#8A8F98;
+  --text:#F2F4F5;
+
+  --line:rgba(255,255,255,.08);
+  --glass:rgba(255,255,255,.035);
+  --danger:#FF5470;
+  --radius:20px;
+  --ff-head:'Unbounded','Montserrat',system-ui,sans-serif;
+  --ff-text:'Manrope','Inter',system-ui,sans-serif;
+  --gutter:40px;
+  --header-h:80px;
+  --subnav-h:0px;
+  color-scheme:dark;
+  --glow:color-mix(in srgb,var(--accent) 55%,transparent);
+  --glow-soft:color-mix(in srgb,var(--accent) 18%,transparent);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;background:var(--bg)}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:var(--ff-text);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:clip;
+}
+html.intro-lock,html.intro-lock body{overflow:hidden}
+/* зерно поверх всего */
+body::after{
+  content:"";position:fixed;inset:0;z-index:400;pointer-events:none;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+img,svg,canvas{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button,input,textarea{font:inherit;color:inherit}
+::selection{background:var(--accent);color:#000}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+
+.container{width:100%;max-width:1360px;margin:0 auto;padding:0 var(--gutter)}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.accent{color:var(--accent);text-shadow:0 0 28px var(--glow)}
+.ph{outline:1px dashed color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:3px;border-radius:4px}
+
+/* ===== Заставка ===== */
+.intro{
+  position:fixed;inset:0;z-index:300;background:var(--bg);overflow:hidden;
+  display:grid;place-items:center;
+  clip-path:inset(0 0 0 0);transition:clip-path 1s cubic-bezier(.77,0,.18,1),opacity 1s;
+}
+html:not(.has-intro) .intro{display:none}
+.intro.is-out{clip-path:inset(0 0 100% 0);pointer-events:none}
+.intro canvas{position:absolute;inset:0;width:100%;height:100%}
+.intro__car{position:absolute;left:0;top:0;z-index:1;width:0;pointer-events:none;will-change:transform;opacity:0}
+.intro.is-loaded .intro__car{opacity:1}
+.intro--css .intro__car{display:none}
+.intro__car svg{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 18px 18px rgba(0,0,0,.6))}
+.intro__brand{
+  position:relative;z-index:2;display:flex;align-items:baseline;margin-top:-16vh;pointer-events:none;
+  font-family:var(--ff-head);font-weight:800;font-size:clamp(76px,20vw,280px);line-height:1;letter-spacing:-.05em;
+}
+.intro__brand span{
+  display:inline-block;opacity:0;transform:translateX(-40px) scale(.85) skewX(-12deg);filter:blur(14px);
+  transition:opacity .45s ease,transform .7s cubic-bezier(.2,1.4,.4,1),filter .5s ease,text-shadow .6s;
+}
+.intro__brand span.on{opacity:1;transform:none;filter:none}
+@media (max-aspect-ratio:9/10){.intro__brand{margin-top:-34vh}}
+.intro__brand .acc{color:var(--accent);text-shadow:0 0 40px var(--glow)}
+.intro.is-final .intro__brand span{text-shadow:0 0 50px color-mix(in srgb,var(--accent) 35%,transparent)}
+.intro.is-final .intro__brand .acc{text-shadow:0 0 30px var(--accent),0 0 80px var(--glow)}
+.intro__tag{
+  position:absolute;z-index:2;left:0;right:0;bottom:calc(9vh + env(safe-area-inset-bottom));margin:0;text-align:center;
+  font-size:13px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:var(--accent-2);
+  opacity:0;transform:translateY(12px);transition:opacity .6s,transform .6s;
+}
+.intro.is-final .intro__tag{opacity:1;transform:none}
+.intro__skip{
+  position:absolute;z-index:3;top:calc(16px + env(safe-area-inset-top));right:16px;min-height:44px;padding:0 18px;border-radius:999px;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--accent-2);font-size:14px;font-weight:600;transition:.3s;
+}
+.intro__skip:hover{color:var(--accent);border-color:var(--accent)}
+.intro--css .intro__brand span{animation:letterIn .7s cubic-bezier(.2,1.3,.4,1) forwards;animation-delay:calc(.15s + var(--i) * .16s)}
+@keyframes letterIn{to{opacity:1;transform:none;filter:none}}
+
+/* ===== Прогресс скролла и свечение курсора ===== */
+.progress{position:fixed;top:0;left:0;right:0;height:2px;z-index:90;pointer-events:none}
+.progress span{display:block;height:100%;background:var(--accent);box-shadow:0 0 12px var(--accent);transform-origin:0 50%;transform:scaleX(0)}
+.cursor-glow{
+  position:fixed;left:0;top:0;width:560px;height:560px;margin:-280px 0 0 -280px;border-radius:50%;
+  pointer-events:none;z-index:1;opacity:0;transition:opacity .5s;mix-blend-mode:screen;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 8%,transparent),transparent);
+}
+.has-cursor .cursor-glow{opacity:1}
+
+/* ===== Кнопки ===== */
+.btn{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  min-height:56px;padding:0 30px;border-radius:999px;border:0;cursor:pointer;
+  font-weight:700;font-size:16px;letter-spacing:.01em;white-space:nowrap;
+  transition:transform .3s,box-shadow .3s,background .3s,color .3s,border-color .3s;
+}
+.btn--accent{
+  background:var(--accent);color:#03130A;
+  box-shadow:0 0 0 1px var(--glow),0 12px 40px -10px var(--glow),0 0 60px -20px var(--accent);
+}
+.btn--accent:hover{box-shadow:0 0 0 1px var(--accent),0 16px 50px -8px var(--glow),0 0 80px -10px var(--accent)}
+.btn--pulse::after{content:"";position:absolute;inset:0;border-radius:inherit;border:2px solid var(--accent);animation:pulse 2.4s ease-out infinite;pointer-events:none}
+@keyframes pulse{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(1.18,1.55)}}
+.btn--ghost{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.18);color:var(--text)}
+.btn--ghost:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 30px -10px var(--glow)}
+.icon-btn{
+  width:44px;height:44px;border-radius:50%;display:grid;place-items:center;flex:none;
+  background:var(--glass);border:1px solid var(--line);transition:.3s;cursor:pointer;
+}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 24px -6px var(--glow)}
+.icon-btn .ic{width:20px;height:20px}
+
+/* ===== Карточки ===== */
+.card{
+  position:relative;
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:var(--radius);
+  transition:transform .3s,box-shadow .3s,border-color .3s,background .3s;
+}
+.card:hover{
+  transform:translateY(-4px);
+  border-color:color-mix(in srgb,var(--accent) 45%,transparent);
+  box-shadow:0 0 0 1px var(--glow-soft),0 24px 60px -24px var(--glow);
+}
+.tilt{--mx:50%;--my:50%;transform-style:preserve-3d}
+.tilt::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(380px circle at var(--mx) var(--my),color-mix(in srgb,var(--accent) 11%,transparent),transparent 45%);
+}
+.tilt:hover::after{opacity:1}
+
+/* ===== Появление при скролле ===== */
+.js .reveal{opacity:0;transform:translateY(28px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.js .reveal.is-in{opacity:1;transform:none}
+
+/* ===== Секции ===== */
+.section{position:relative;padding:140px 0;scroll-margin-top:calc(var(--header-h) + var(--subnav-h));overflow:clip}
+.section > .container{position:relative;z-index:1}
+.glow-l::before,.glow-r::before{
+  content:"";position:absolute;width:760px;height:760px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 14%,transparent),transparent);
+  filter:blur(20px);
+}
+.glow-l::before{left:-380px;top:10%}
+.glow-r::before{right:-380px;top:20%}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:10px;margin:0 0 20px;
+  font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2);
+}
+.eyebrow::before{content:"";width:28px;height:1px;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.h2{
+  font-family:var(--ff-head);font-weight:800;text-transform:uppercase;letter-spacing:-.035em;
+  font-size:clamp(28px,4vw,56px);line-height:1.04;margin:0;
+}
+.lead{color:var(--accent-2);font-size:18px;max-width:520px;margin:20px 0 0}
+
+/* ===== Шапка ===== */
+.header{position:fixed;inset:0 0 auto;z-index:60;height:var(--header-h);transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+.header.is-scrolled{background:rgba(10,10,12,.72);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-color:var(--line)}
+.header__in{height:100%;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.logo{display:inline-flex;align-items:center;gap:10px;min-height:44px}
+/* ЛОГОТИП — плейсхолдер. Замените .logo__mark на <img src="logo.png" alt="I-CAR" height="40"> */
+.logo__mark{
+  font-family:var(--ff-head);font-weight:800;font-size:24px;letter-spacing:-.04em;line-height:1;
+  padding:8px 12px;border:1px dashed color-mix(in srgb,var(--accent) 50%,transparent);border-radius:10px;
+}
+.logo__mark b{color:var(--accent);text-shadow:0 0 18px var(--glow)}
+.nav{display:flex;gap:36px}
+.nav a{position:relative;font-size:15px;font-weight:600;color:var(--accent-2);transition:color .3s;padding:10px 0}
+.nav a::after{content:"";position:absolute;left:0;right:0;bottom:4px;height:1px;background:var(--accent);transform:scaleX(0);transition:transform .3s;box-shadow:0 0 8px var(--accent)}
+.nav a:hover{color:var(--text)}
+.nav a:hover::after{transform:scaleX(1)}
+.header__contacts{display:flex;align-items:center;gap:10px}
+.header__phone{font-family:var(--ff-head);font-weight:700;font-size:18px;letter-spacing:-.02em;margin-right:8px;transition:color .3s;white-space:nowrap}
+.header__phone:hover{color:var(--accent)}
+.header__call,.burger{display:none}
+.burger{flex-direction:column;gap:5px}
+.burger span{display:block;width:18px;height:2px;background:currentColor;border-radius:2px;transition:.3s}
+
+/* Мобильное меню */
+.menu-overlay{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.6);opacity:0;visibility:hidden;transition:.3s}
+.menu{
+  position:fixed;top:0;right:0;bottom:0;z-index:80;width:min(340px,86vw);
+  background:rgba(16,16,20,.92);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  border-left:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:28px;
+  transform:translateX(100%);transition:transform .4s cubic-bezier(.2,.7,.2,1);overflow-y:auto;
+}
+.menu-open .menu{transform:none}
+.menu-open .menu-overlay{opacity:1;visibility:visible}
+.menu__top{display:flex;justify-content:space-between;align-items:center}
+.menu__nav{display:flex;flex-direction:column}
+.menu__nav a{font-family:var(--ff-head);font-weight:700;text-transform:uppercase;font-size:20px;letter-spacing:-.02em;padding:14px 0;border-bottom:1px solid var(--line);transition:color .3s,padding .3s}
+.menu__nav a:hover{color:var(--accent);padding-left:8px}
+.menu__phone{font-family:var(--ff-head);font-weight:700;font-size:20px;display:block;min-height:44px}
+.menu__msg{display:flex;gap:10px;margin-top:12px}
+.menu .btn{width:100%}
+
+/* ===== HERO ===== */
+.hero{position:relative;min-height:100svh;display:flex;align-items:center;padding:calc(var(--header-h) + 50px) 0 70px;overflow:clip}
+.hero::before{
+  content:"";position:absolute;right:-10%;top:15%;width:900px;height:900px;border-radius:50%;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 16%,transparent),transparent 70%);pointer-events:none;
+}
+.hero::after{
+  content:"";position:absolute;left:-300px;top:-200px;width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--accent-2) 14%,transparent),transparent);pointer-events:none;
+}
+.hero__grid{position:relative;z-index:2;display:grid;grid-template-columns:1.15fr 1fr;gap:32px;align-items:center}
+.hero__grid > *{min-width:0}
+.kicker{
+  display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border-radius:999px;margin-bottom:28px;
+  background:var(--glass);border:1px solid var(--line);font-size:14px;font-weight:600;color:var(--accent-2);
+}
+.kicker i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:blink 2s infinite}
+@keyframes blink{50%{opacity:.3}}
+.hero__title{
+  font-family:var(--ff-head);font-weight:800;text-transform:uppercase;
+  /* «ПРОФЕССИОНАЛЬНЫЕ» ≈ 14.6em — размер подогнан так, чтобы слово влезало в колонку */
+  font-size:calc((min(100vw,1360px) - 112px) / 25.8);line-height:1.02;letter-spacing:-.045em;margin:0;
+}
+.hero__title span{display:block}
+.hero__slogan{
+  font-style:italic;font-size:20px;line-height:1.5;color:var(--accent-2);
+  margin:28px 0 0;padding-left:18px;border-left:2px solid var(--accent);max-width:460px;
+}
+.hero__actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:40px}
+.hero__meta{display:flex;flex-wrap:wrap;gap:10px 24px;margin:32px 0 0;padding:0;list-style:none;color:var(--accent-2);font-size:14px;font-weight:600}
+.hero__meta li{display:flex;align-items:center;gap:8px}
+.hero__meta .ic{width:18px;height:18px;color:var(--accent)}
+
+/* сцена с машиной */
+.stage{position:relative;width:100%;aspect-ratio:4/3;transition:transform .3s ease-out;will-change:transform}
+.stage__spot{
+  position:absolute;left:10%;right:10%;top:12%;bottom:6%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 10%,transparent),transparent);
+}
+.stage__floor{
+  position:absolute;left:0;right:0;top:79%;height:1px;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 40%,transparent),transparent);
+}
+.car{position:absolute;left:0;width:100%;top:32%;aspect-ratio:820/300;isolation:isolate}
+.car::before{
+  content:"";position:absolute;left:8%;right:6%;bottom:-7%;height:20%;z-index:-1;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(0,0,0,.95),transparent);filter:blur(4px);
+}
+.car::after{
+  content:"";position:absolute;left:20%;right:20%;bottom:-16%;height:26%;z-index:-2;border-radius:50%;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 40%,transparent),transparent);filter:blur(12px);
+}
+.car-svg{width:100%;height:100%;overflow:visible;animation:float 6s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-5px)}}
+.st-acc{stop-color:var(--accent)}
+.acc-fill{fill:var(--accent)}
+.acc-stroke{stroke:var(--accent)}
+.car3d{position:absolute;inset:0;width:100%;height:100%;z-index:0;cursor:grab;outline:0}
+.car3d:active{cursor:grabbing}
+.is-3d .car,.is-3d .stage__floor{display:none}
+
+.links{position:absolute;inset:0;width:100%;height:100%;overflow:visible;z-index:1;pointer-events:none}
+.links path{fill:none;stroke:color-mix(in srgb,var(--accent) 70%,transparent);stroke-width:1;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .9s ease calc(.3s + var(--i) * .35s)}
+.links circle{fill:var(--accent);opacity:0;transition:opacity .4s ease calc(.9s + var(--i) * .35s);filter:drop-shadow(0 0 6px var(--accent))}
+.is-ready .links path{stroke-dashoffset:0}
+.is-ready .links circle{opacity:1}
+.is-drawn .links path,.is-drawn .links circle{transition:none}
+
+.badge{
+  position:absolute;left:var(--x);top:var(--y);translate:-50% -50%;z-index:2;pointer-events:none;
+  display:inline-flex;align-items:center;gap:8px;padding:7px 16px 7px 7px;border-radius:999px;
+  background:rgba(14,15,18,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);
+  box-shadow:0 0 28px -8px var(--glow);font-size:14px;font-weight:700;white-space:nowrap;
+  opacity:0;scale:.6;
+}
+.badge i{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#03130A}
+.badge i .ic{width:16px;height:16px;stroke-width:2.2}
+.is-ready .badge{animation:pop .6s cubic-bezier(.2,1.5,.4,1) forwards,bob 5s ease-in-out infinite;animation-delay:calc(.8s + var(--i) * .35s),calc(1.6s + var(--i) * .5s)}
+@keyframes pop{to{opacity:1;scale:1}}
+@keyframes bob{0%,100%{opacity:1;scale:1;transform:translateY(0)}50%{opacity:1;scale:1;transform:translateY(-6px)}}
+.stage:not(.js-stage) .badge{opacity:1;scale:1}
+
+/* конфигуратор 3D */
+.config{display:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:6px;position:relative;z-index:3}
+.has-3d .config{display:flex}
+.config__colors{display:flex;gap:2px}
+.swatch{width:44px;height:44px;border-radius:50%;border:0;background:none;display:grid;place-items:center;cursor:pointer;padding:0}
+.swatch::before{content:"";width:24px;height:24px;border-radius:50%;background:var(--c);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);transition:transform .3s,box-shadow .3s}
+.swatch:hover::before{transform:scale(1.15)}
+.swatch.is-active::before{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent),0 0 16px var(--glow)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--glass);cursor:pointer;
+  font-size:14px;font-weight:700;color:var(--accent-2);display:inline-flex;align-items:center;gap:8px;transition:.3s;
+}
+.chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.45;transition:.3s}
+.chip:hover{color:var(--text)}
+.chip[aria-pressed="true"]{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.chip[aria-pressed="true"]::before{opacity:1;box-shadow:0 0 8px var(--accent)}
+.chip--touch{display:none}
+.config__hint{display:none;margin:12px 0 0;font-size:13px;color:var(--accent-2);text-align:center}
+.has-3d .config__hint{display:block}
+.hint-touch{display:none}
+@media (pointer:coarse){.chip--touch{display:inline-flex}.hint-touch{display:inline}.hint-mouse{display:none}}
+
+/* ===== Бегущая строка ===== */
+.marquee-wrap{position:relative;z-index:2;overflow:hidden;padding:26px 0}
+.marquee{width:110%;margin-left:-5%;transform:rotate(-1.6deg);border-block:1px solid color-mix(in srgb,var(--accent) 25%,transparent);background:rgba(255,255,255,.02);padding:20px 0;overflow:hidden}
+.marquee__track{display:flex;width:max-content;animation:marq 40s linear infinite}
+.marquee:hover .marquee__track{animation-play-state:paused}
+.marquee__item{display:flex;align-items:center;gap:30px;padding-right:30px;font-family:var(--ff-head);font-weight:800;font-size:clamp(22px,3vw,40px);text-transform:uppercase;letter-spacing:-.03em;white-space:nowrap}
+.marquee__item .o{color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.4)}
+.marquee__item i{font-style:normal;color:var(--accent);text-shadow:0 0 14px var(--accent);font-size:.6em}
+@keyframes marq{to{transform:translateX(-50%)}}
+
+/* ===== УСЛУГИ ===== */
+.giant{
+  font-family:var(--ff-head);font-weight:800;text-transform:uppercase;perspective:900px;
+  font-size:min(calc((100vw - 2 * var(--gutter)) / 5.15),250px);line-height:.86;letter-spacing:-.06em;margin:0 0 0 -.04em;
+  background:linear-gradient(180deg,#fff 20%,rgba(255,255,255,.08) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.giant.split{background:none}
+.giant.split span{
+  display:inline-block;transform-origin:50% 100%;
+  background:linear-gradient(180deg,#fff 20%,rgba(255,255,255,.08) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  opacity:0;transform:translateY(40%) rotateX(-80deg);transition:opacity .7s ease,transform 1s cubic-bezier(.2,.9,.2,1);transition-delay:calc(var(--i) * 70ms);
+}
+.giant.split.is-on span{opacity:1;transform:none}
+.services__head{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;margin:36px 0 56px}
+.services__head .lead{margin:0}
+.services{display:grid;grid-template-columns:repeat(12,1fr);gap:20px}
+.svc{grid-column:span 3;display:flex;flex-direction:column;min-height:300px;padding:28px;cursor:pointer}
+.svc:nth-child(n+5){grid-column:span 4}
+.svc__top{display:flex;justify-content:space-between;align-items:center;margin-bottom:auto}
+.svc__num{font-family:var(--ff-head);font-weight:700;font-size:14px;color:var(--accent-2)}
+.svc__arrow{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);transition:.3s}
+.svc__arrow .ic{width:18px;height:18px}
+.svc:hover .svc__arrow{background:var(--accent);border-color:var(--accent);color:#03130A;transform:rotate(45deg);box-shadow:0 0 24px var(--glow)}
+.svc__icon{
+  width:60px;height:60px;border-radius:16px;display:grid;place-items:center;margin:36px 0 24px;
+  color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);transition:transform .4s cubic-bezier(.2,1.4,.4,1);
+}
+.svc:hover .svc__icon{transform:translateZ(30px) rotate(-8deg) scale(1.08)}
+.svc__icon .ic{width:28px;height:28px;filter:drop-shadow(0 0 6px var(--glow))}
+.svc h3{font-family:var(--ff-head);font-weight:700;font-size:19px;line-height:1.2;letter-spacing:-.02em;margin:0 0 10px;text-transform:uppercase}
+.svc p{margin:0;color:var(--accent-2);font-size:15px;line-height:1.5}
+.svc-progress{display:none}
+
+/* ===== ЦИФРЫ ===== */
+.stats-section{padding:60px 0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat{padding:48px 32px;border-left:1px solid var(--line)}
+.stat:first-child{border-left:0;padding-left:0}
+.stat__num{font-family:var(--ff-head);font-weight:800;font-size:clamp(40px,5vw,76px);line-height:1;letter-spacing:-.05em;white-space:nowrap}
+.stat__num small{font-size:.42em;letter-spacing:-.02em;color:var(--accent);margin:0 .12em}
+.stat__num small:empty{display:none}
+.stat p{margin:16px 0 0;color:var(--accent-2);font-size:16px}
+
+/* ===== КАК РАБОТАЕМ ===== */
+.section-head{max-width:760px;margin-bottom:72px}
+.steps{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:28px;margin:0;padding:0;list-style:none}
+.steps::before,.steps::after{content:"";position:absolute;top:44px;left:12.5%;right:12.5%;height:2px;border-radius:2px}
+.steps::before{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 20%,transparent),var(--accent),color-mix(in srgb,var(--accent) 20%,transparent));box-shadow:0 0 18px var(--accent);opacity:.7}
+.steps::after{background:linear-gradient(90deg,transparent,#fff,transparent);width:120px;right:auto;animation:run 4s ease-in-out infinite;opacity:.8}
+@keyframes run{0%{left:12.5%;opacity:0}15%{opacity:.9}85%{opacity:.9}100%{left:calc(87.5% - 120px);opacity:0}}
+.step{position:relative;text-align:center;padding:0 8px}
+.step__icon{
+  position:relative;z-index:1;width:88px;height:88px;margin:0 auto 28px;border-radius:50%;display:grid;place-items:center;
+  background:var(--bg);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);
+  box-shadow:0 0 0 8px var(--bg),0 0 40px -6px var(--glow),inset 0 0 20px -6px var(--glow);transition:.3s;
+}
+.step:hover .step__icon{transform:translateY(-4px) rotateY(180deg)}
+.step:hover .step__icon .ic{transform:rotateY(180deg)}
+.step__icon .ic{width:32px;height:32px;transition:transform .3s}
+.step__num{position:absolute;top:-6px;right:-10px;font-family:var(--ff-head);font-size:12px;font-weight:700;padding:4px 8px;border-radius:999px;background:var(--accent);color:#03130A}
+.step:hover .step__num{opacity:0}
+.step h3{font-family:var(--ff-head);font-weight:700;font-size:17px;line-height:1.25;letter-spacing:-.02em;text-transform:uppercase;margin:0 0 10px}
+.step p{margin:0;color:var(--accent-2);font-size:15px;line-height:1.55}
+
+/* ===== ПОЧЕМУ МЫ + FAQ ===== */
+.why{display:grid;grid-template-columns:.9fr 1.1fr;gap:64px;align-items:start}
+.why__intro{position:sticky;top:calc(var(--header-h) + 40px)}
+.why__grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.why-card{padding:32px}
+.why-card .ic{width:30px;height:30px;color:var(--accent);filter:drop-shadow(0 0 8px var(--glow));margin-bottom:24px}
+.why-card h3{font-family:var(--ff-head);font-weight:700;font-size:18px;line-height:1.25;letter-spacing:-.02em;margin:0 0 10px;text-transform:uppercase}
+.why-card p{margin:0;color:var(--accent-2);font-size:15px;line-height:1.55}
+
+.faq{border-top:1px solid var(--line)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{
+  list-style:none;display:flex;justify-content:space-between;align-items:center;gap:20px;min-height:76px;padding:18px 0;cursor:pointer;
+  font-family:var(--ff-head);font-weight:700;font-size:clamp(15px,1.5vw,19px);line-height:1.3;text-transform:uppercase;letter-spacing:-.02em;transition:color .3s;
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary:hover{color:var(--accent)}
+.faq__plus{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;flex:none;transition:.35s}
+.faq__plus .ic{width:18px;height:18px}
+.faq details[open] .faq__plus{transform:rotate(45deg);background:var(--accent);color:#03130A;border-color:var(--accent);box-shadow:0 0 20px var(--glow)}
+.faq__a{margin:0;padding:0 64px 26px 0;color:var(--accent-2);animation:fadeDown .45s ease}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-8px)}}
+
+/* ===== ФОРМА ===== */
+.request{
+  position:relative;display:grid;grid-template-columns:1fr 1fr;gap:64px;padding:72px;border-radius:28px;
+  background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+  border:1px solid var(--line);overflow:hidden;isolation:isolate;
+}
+.request::before{
+  content:"";position:absolute;z-index:-1;width:640px;height:640px;left:-200px;bottom:-320px;border-radius:50%;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 28%,transparent),transparent);filter:blur(10px);
+}
+.request::after{
+  content:"";position:absolute;z-index:-1;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 60%,transparent),transparent) top/100% 1px no-repeat;
+}
+.request__phone{display:inline-flex;align-items:center;gap:12px;margin-top:36px;font-family:var(--ff-head);font-weight:700;font-size:22px;min-height:44px;transition:color .3s}
+.request__phone:hover{color:var(--accent)}
+.request__phone .ic{color:var(--accent)}
+.wheel3d{
+  display:none;position:relative;width:280px;max-width:100%;aspect-ratio:1;margin-top:32px;cursor:pointer;border-radius:50%;outline-offset:6px;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 12%,transparent),transparent 72%);
+}
+.wheel3d::before{content:"";position:absolute;inset:7%;border-radius:50%;border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);box-shadow:inset 0 0 50px -14px var(--glow)}
+.wheel3d::after{content:"";position:absolute;inset:0;border-radius:50%;border:1px dashed color-mix(in srgb,var(--accent) 20%,transparent);animation:spin 40s linear infinite}
+.has-3d .wheel3d{display:block}
+.wheel3d canvas{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.form{display:flex;flex-direction:column;gap:18px}
+.field label{display:block;font-size:14px;font-weight:600;color:var(--accent-2);margin-bottom:8px}
+.field input,.field textarea{
+  width:100%;min-height:56px;padding:15px 18px;border-radius:14px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);outline:0;
+  font-size:16px;transition:border-color .3s,box-shadow .3s,background .3s;
+}
+.field textarea{min-height:120px;resize:vertical}
+.field input::placeholder,.field textarea::placeholder{color:rgba(138,143,152,.6)}
+.field input:focus,.field textarea:focus{border-color:var(--accent);background:rgba(255,255,255,.06);box-shadow:0 0 0 4px var(--glow-soft)}
+.field__err{display:none;margin-top:6px;font-size:13px;color:var(--danger)}
+.field.is-error input,.field.is-error textarea{border-color:var(--danger);animation:shake .4s}
+.field.is-error .field__err{display:block}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.quick button{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--accent-2);font-size:13px;font-weight:600;cursor:pointer;transition:.3s}
+.quick button:hover,.quick button.is-on{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent);background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.form .btn{width:100%;margin-top:6px}
+.btn.is-loading{pointer-events:none;color:transparent}
+.btn.is-loading::before{content:"";position:absolute;width:22px;height:22px;border-radius:50%;border:2px solid #03130A;border-right-color:transparent;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.consent{margin:2px 0 0;font-size:12px;line-height:1.5;color:rgba(138,143,152,.8)}
+.consent a{text-decoration:underline}
+.success{display:none;flex-direction:column;align-items:flex-start;justify-content:center;gap:16px;min-height:100%}
+.success__icon{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#03130A;box-shadow:0 0 50px var(--glow);animation:popIn .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes popIn{from{transform:scale(0)}}
+.success__icon .ic{width:34px;height:34px;stroke-width:2.4}
+.success h3{font-family:var(--ff-head);font-weight:800;font-size:26px;line-height:1.15;letter-spacing:-.03em;text-transform:uppercase;margin:8px 0 0}
+.success p{margin:0;color:var(--accent-2)}
+.is-sent .form{display:none}
+.is-sent .success{display:flex}
+
+/* ===== ФУТЕР ===== */
+.footer{background:var(--bg-2);border-top:1px solid var(--line);padding:80px 0 32px;scroll-margin-top:calc(var(--header-h) + var(--subnav-h))}
+.footer__grid{display:grid;grid-template-columns:1.3fr 1.3fr 1fr 1fr;gap:40px}
+.footer__about{color:var(--accent-2);font-size:15px;max-width:300px;margin:20px 0 0}
+.footer h4{margin:0 0 14px;font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-2)}
+.footer__phone{font-family:var(--ff-head);font-weight:800;font-size:clamp(22px,2.2vw,30px);letter-spacing:-.03em;display:inline-block;min-height:44px;transition:color .3s}
+.footer__phone:hover{color:var(--accent)}
+.footer__msg{display:flex;gap:10px;margin-top:8px}
+.footer p{margin:0}
+.footer__big{font-size:18px;font-weight:700}
+.footer__bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:64px;padding-top:24px;border-top:1px solid var(--line);font-size:14px;color:var(--accent-2)}
+.footer__bottom a{text-decoration:underline;display:inline-flex;align-items:center;min-height:44px}
+.totop{width:44px;height:44px}
+.totop .ic{transform:rotate(-45deg)}
+
+/* Мобильная панель вызова */
+.mbar{display:none}
+
+/* ===== Разделы-блоки в шапке ===== */
+.navblocks{display:flex;gap:8px}
+.navblock{
+  display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px 0 12px;border-radius:14px;flex:none;
+  background:var(--glass);border:1px solid var(--line);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  font-size:14px;font-weight:700;color:var(--accent-2);white-space:nowrap;
+  transition:color .3s,border-color .3s,background .3s,transform .3s,box-shadow .3s;
+}
+.navblock .ic{width:18px;height:18px;color:var(--accent);opacity:.8;transition:color .3s}
+.navblock:hover{color:var(--text);border-color:color-mix(in srgb,var(--accent) 40%,transparent);transform:translateY(-2px);box-shadow:0 10px 24px -14px var(--glow)}
+.navblock.is-active{color:#03130A;background:var(--accent);border-color:var(--accent);box-shadow:0 0 26px -6px var(--glow)}
+.navblock.is-active .ic{color:#03130A;opacity:1}
+.subnav{display:none}
+.footer .credit{flex-basis:100%;font-size:12px;color:rgba(138,143,152,.7)}
+
+/* ===== Вотермарк ===== */
+.watermark{position:fixed;inset:0;z-index:450;pointer-events:none;overflow:hidden;opacity:.055}
+.watermark__grid{
+  position:absolute;left:50%;top:50%;width:250vmax;height:250vmax;translate:-50% -50%;rotate:-24deg;
+  display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:56px 96px;
+}
+.watermark__grid span{font-family:var(--ff-head);font-weight:800;font-size:clamp(26px,3.6vw,52px);letter-spacing:.14em;color:#fff;white-space:nowrap}
+.watermark__grid span:nth-child(even){color:transparent;-webkit-text-stroke:1px #fff}
+
+/* ===== Загрузка 3D в заставке ===== */
+.intro__load{
+  position:absolute;z-index:2;left:50%;bottom:calc(18vh + env(safe-area-inset-bottom));translate:-50% 0;width:min(240px,60vw);
+  display:grid;gap:10px;justify-items:center;transition:opacity .4s;
+}
+.intro__load b{display:block;width:100%;height:2px;background:var(--line);border-radius:2px;overflow:hidden}
+.intro__load i{display:block;height:100%;width:0;background:var(--accent);box-shadow:0 0 10px var(--accent);transition:width .25s}
+.intro__load span{font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-2);font-variant-numeric:tabular-nums}
+.intro.is-loaded .intro__load,.intro--css .intro__load{opacity:0}
+
+/* ===== АДАПТИВ ===== */
+@media (max-width:1380px){
+  .header__phone,.header__msg{display:none}
+  .header__call{display:grid}
+}
+@media (max-width:1160px){
+  .navblock{padding:0 12px}
+  .navblock .ic{display:none}
+}
+@media (max-width:1100px){
+  .svc,.svc:nth-child(n+5){grid-column:span 6}
+  .svc:last-child{grid-column:span 12}
+  .why{grid-template-columns:1fr;gap:48px}
+  .why__intro{position:static}
+  .request{grid-template-columns:1fr;padding:56px;gap:40px}
+  .footer__grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:1024px){
+  :root{--subnav-h:60px}
+  .header .navblocks{display:none}
+  .burger{display:flex;align-items:center;justify-content:center}
+  .subnav{
+    display:block;position:fixed;left:0;right:0;top:var(--header-h);z-index:59;height:var(--subnav-h);
+    background:rgba(10,10,12,.82);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);
+    overflow-x:auto;scrollbar-width:none;
+  }
+  .subnav::-webkit-scrollbar{display:none}
+  .subnav .navblocks{width:max-content;height:100%;align-items:center;padding:0 max(var(--gutter),env(safe-area-inset-right,0px)) 0 max(var(--gutter),env(safe-area-inset-left,0px))}
+  .subnav .navblock .ic{display:block}
+  .header{background:rgba(10,10,12,.82);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+  .hero{padding-top:calc(var(--header-h) + var(--subnav-h) + 40px)}
+  .hero{min-height:auto}
+  .hero__grid{grid-template-columns:1fr;gap:24px}
+  .hero__title{font-size:min(calc((100vw - 2 * var(--gutter)) / 14.9),64px)}
+  .hero__visual{max-width:640px;width:100%;margin:0 auto}
+}
+@media (max-width:760px){
+  :root{--gutter:16px;--header-h:68px}
+  .section{padding:88px 0}
+  .logo__mark{font-size:20px;padding:6px 10px}
+  .hero{padding:calc(var(--header-h) + var(--subnav-h) + 28px) 0 40px}
+  .hero__title{letter-spacing:-.05em}
+  .kicker{font-size:13px;margin-bottom:20px}
+  .hero__slogan{font-size:17px;margin-top:20px}
+  .hero__actions{margin-top:28px}
+  .hero__actions .btn{flex:1 1 100%}
+  .hero__meta{gap:8px 18px;font-size:13px}
+  .badge{left:var(--xm,var(--x));top:var(--ym,var(--y));font-size:12px;gap:6px;padding:5px 12px 5px 5px}
+  .badge i{width:22px;height:22px}
+  .badge i .ic{width:13px;height:13px}
+  .config{justify-content:center}
+
+  .services__head{flex-direction:column;align-items:flex-start;margin:24px 0 32px}
+  .services{
+    display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
+    margin:0 calc(var(--gutter) * -1);padding:8px var(--gutter) 24px;scroll-padding:0 var(--gutter);
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .services::-webkit-scrollbar{display:none}
+  .svc,.svc:nth-child(n+5),.svc:last-child{flex:0 0 80%;scroll-snap-align:start;min-height:290px;padding:24px}
+  .svc-progress{display:block;height:2px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:4px}
+  .svc-progress span{display:block;height:100%;width:30%;background:var(--accent);box-shadow:0 0 10px var(--accent);transition:width .2s}
+
+  .stats{grid-template-columns:1fr 1fr}
+  .stat{padding:32px 16px}
+  .stat:nth-child(odd){border-left:0;padding-left:0}
+  .stat:nth-child(n+3){border-top:1px solid var(--line)}
+  .stat__num{font-size:clamp(30px,10vw,44px)}
+  .stat p{font-size:14px;margin-top:10px}
+
+  .section-head{margin-bottom:48px}
+  .steps{grid-template-columns:1fr;gap:36px}
+  .steps::before{top:40px;bottom:40px;left:36px;right:auto;width:2px;height:auto;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 20%,transparent),var(--accent),color-mix(in srgb,var(--accent) 20%,transparent))}
+  .steps::after{display:none}
+  .step{display:grid;grid-template-columns:72px 1fr;gap:20px;text-align:left;padding:0;align-items:start}
+  .step__icon{width:72px;height:72px;margin:0}
+  .step__icon .ic{width:26px;height:26px}
+  .step h3{font-size:16px;margin-top:6px}
+
+  .why__grid{grid-template-columns:1fr;gap:14px}
+  .why-card{padding:24px}
+  .why-card .ic{margin-bottom:16px}
+  .faq__a{padding-right:0}
+
+  .request{padding:32px 20px;border-radius:22px}
+  .request__phone{font-size:19px}
+  .wheel3d{width:180px;height:180px;margin:20px auto 0}
+
+  .footer{padding:56px 0 110px}
+  .footer__grid{grid-template-columns:1fr;gap:32px}
+  .footer__bottom{flex-direction:column;margin-top:40px}
+
+  .mbar{
+    position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:65;
+    display:flex;gap:8px;padding:6px;border-radius:999px;
+    background:rgba(16,16,20,.86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid var(--line);
+    transform:translateY(160%);transition:transform .45s cubic-bezier(.2,.9,.2,1);
+  }
+  .mbar.is-on{transform:none}
+  .mbar .btn{flex:1;min-height:48px;padding:0 12px;font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== ЗАСТАВКА ===== -->
+<div class="intro" id="intro">
+  <canvas></canvas>
+  <!-- Плоская машина заставки: едет поверх 3D-пола, её положение считает app3d.js -->
+  <div class="intro__car" aria-hidden="true">
+    <svg viewBox="0 0 820 300">
+      <defs>
+        <linearGradient id="iBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#4a4f59"/><stop offset=".32" stop-color="#1e2026"/><stop offset=".7" stop-color="#0d0e11"/><stop offset="1" stop-color="#040405"/>
+        </linearGradient>
+        <linearGradient id="iEdge" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" class="st-acc" stop-opacity="0"/><stop offset=".45" class="st-acc" stop-opacity=".7"/><stop offset=".68" stop-color="#ffffff" stop-opacity=".95"/><stop offset="1" class="st-acc" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="iGlass" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#5d6570" stop-opacity=".9"/><stop offset=".6" stop-color="#14171b"/><stop offset="1" stop-color="#090a0c"/>
+        </linearGradient>
+        <filter id="iGlow" x="-30%" y="-200%" width="160%" height="500%">
+          <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <g id="iWheel">
+          <circle r="56" fill="#07080a"/>
+          <circle r="52" fill="none" stroke="#1d2026" stroke-width="3"/>
+          <circle r="40" fill="#2a2e35"/>
+          <path d="M-27,-12 A30,30 0 0 1 -8,-29" fill="none" class="acc-stroke" stroke-width="8" stroke-linecap="round"/>
+          <path d="M0,-8 L0,-37 M7.6,-2.5 L35.2,-11.4 M4.7,6.5 L21.7,29.9 M-4.7,6.5 L-21.7,29.9 M-7.6,-2.5 L-35.2,-11.4" stroke="#0a0b0d" stroke-width="10" stroke-linecap="round"/>
+          <path d="M0,-8 L0,-37 M7.6,-2.5 L35.2,-11.4 M4.7,6.5 L21.7,29.9 M-4.7,6.5 L-21.7,29.9 M-7.6,-2.5 L-35.2,-11.4" stroke="#8a919c" stroke-width="4.5" stroke-linecap="round"/>
+          <circle r="9" fill="#24272d" stroke="#9aa1ab" stroke-width="2"/>
+        </g>
+      </defs>
+      <path d="M129,238 A61,61 0 0 1 251,238 Z" fill="#020203"/>
+      <path d="M549,238 A61,61 0 0 1 671,238 Z" fill="#020203"/>
+      <path d="M70,226 C62,198 66,170 98,160 L220,140 C280,96 340,78 420,76 C480,76 520,90 560,118 L700,150 C740,158 760,176 762,200 L762,224 C762,233 754,238 744,238 L672,238 A62,62 0 0 0 548,238 L252,238 A62,62 0 0 0 128,238 L86,238 C76,238 71,233 70,226 Z" fill="url(#iBody)"/>
+      <path d="M252,238 L548,238 L542,224 L260,226 Z" fill="#050506"/>
+      <path d="M236,141 C290,104 344,90 418,89 C466,89 500,101 530,123 Z" fill="url(#iGlass)"/>
+      <path d="M300,113 L342,95 L356,95 L314,119 Z" fill="#fff" opacity=".08"/>
+      <path d="M396,90 L386,133" stroke="#0b0c0f" stroke-width="7"/>
+      <path d="M108,196 C300,184 520,176 752,186" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width="1.5"/>
+      <path d="M386,134 L378,226 M548,128 C552,170 549,205 542,224" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="2"/>
+      <rect x="468" y="150" width="30" height="5" rx="2.5" fill="#3a3f47"/>
+      <path d="M516,121 C522,111 538,111 543,119 L540,127 L520,127 Z" fill="#16181c"/>
+      <path d="M100,162 L220,141 C280,97 340,79 420,77 C480,77 520,91 560,119 L700,151 C736,158 756,174 760,196" fill="none" stroke="url(#iEdge)" stroke-width="2.2" filter="url(#iGlow)"/>
+      <path d="M708,158 C732,161 752,171 759,184 L733,181 C724,172 716,165 708,158 Z" class="acc-fill" filter="url(#iGlow)"/>
+      <path d="M68,178 L102,165 L104,173 L70,188 Z" fill="#ff3b5c" filter="url(#iGlow)" opacity=".9"/>
+      <path d="M266,241 L536,241" class="acc-stroke" stroke-width="2.5" stroke-linecap="round" filter="url(#iGlow)"/>
+      <use class="iw" href="#iWheel" data-x="190" transform="translate(190 238)"/>
+      <use class="iw" href="#iWheel" data-x="610" transform="translate(610 238)"/>
+    </svg>
+  </div>
+  <div class="intro__brand" aria-label="I-CAR"><span class="acc" style="--i:0">I</span><span style="--i:1">-</span><span style="--i:2">C</span><span style="--i:3">A</span><span style="--i:4">R</span></div>
+  <div class="intro__load" aria-hidden="true"><b><i id="introBar"></i></b><span id="introPct">Загрузка 3D</span></div>
+  <p class="intro__tag">Выездной автосервис · 24/7</p>
+  <button class="intro__skip" id="introSkip" type="button">Пропустить</button>
+</div>
+
+<!-- Вотермарк на весь сайт (слова заполняются скриптом) -->
+<div class="watermark" aria-hidden="true"><div class="watermark__grid" id="watermark"><span>ASTRYXAS</span></div></div>
+
+<div class="progress" aria-hidden="true"><span id="progress"></span></div>
+<div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+
+<!-- ===== Иконки (спрайт) ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-diag" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M6.5 11h2.5l1.5-3 3 6 1.5-3h2.5M9 21h6M12 17v4"/></symbol>
+    <symbol id="i-tow" viewBox="0 0 24 24"><path d="M2 17V7h10v10M12 10h5l4 4v3h-2M9 17h6M2 17h1.5"/><circle cx="6.5" cy="17.5" r="2"/><circle cx="17" cy="17.5" r="2"/></symbol>
+    <symbol id="i-tire" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3v5.5M12 15.5V21M3 12h5.5M15.5 12H21"/></symbol>
+    <symbol id="i-oil" viewBox="0 0 24 24"><path d="M12 3s6 6.4 6 11a6 6 0 0 1-12 0c0-4.6 6-11 6-11z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/></symbol>
+    <symbol id="i-clean" viewBox="0 0 24 24"><path d="M10 3l1.8 4.7L16.5 9.5l-4.7 1.8L10 16l-1.8-4.7L3.5 9.5l4.7-1.8z"/><path d="M18 14l.9 2.1 2.1.9-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 7.6-1.7M12 14.5v2.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.6L3.5 20.5l1.4-4.9A8.5 8.5 0 1 1 21 11.5z"/><path d="M8.5 10h7M8.5 13.5h4.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 3.5h3.5l2 5-2.5 1.5a11.5 11.5 0 0 0 6 6l1.5-2.5 5 2V19a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3 5.5a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 16.5V13l2-5.5h14L21 13v3.5M3 13h18"/><circle cx="7" cy="16.5" r="2"/><circle cx="17" cy="16.5" r="2"/><path d="M9 16.5h6"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 13.5A8.5 8.5 0 1 1 10.5 3.5a6.5 6.5 0 0 0 10 10z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-wa" viewBox="0 0 24 24"><path d="M3.5 20.5l1.3-4.4a8.6 8.6 0 1 1 3.2 3.1z"/><path d="M9 8.6c.2-.4.5-.4.8-.4h.5l1 2.2-.8 1a5.6 5.6 0 0 0 2.3 2.2l1-.8 2.1 1v.6c0 .4-.2.8-.6 1-.9.5-2.4.4-4.2-.9a8.2 8.2 0 0 1-2.4-2.7C8.2 10.6 8.5 9.4 9 8.6z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-tg" viewBox="0 0 24 24"><path d="M21 4.5L2.9 11.6c-.8.3-.8 1.4 0 1.7l4.4 1.5 1.7 5.3c.2.7 1.1.9 1.6.4l2.5-2.4 4.6 3.4c.6.4 1.5.1 1.7-.6L22.3 5.6c.2-.8-.6-1.4-1.3-1.1z"/><path d="M7.3 14.8l9.7-6.5-6.4 7.6"/></symbol>
+  </defs>
+</svg>
+
+<!-- ===== ШАПКА ===== -->
+<header class="header" id="header">
+  <div class="container header__in">
+    <!-- ЛОГОТИП: замените span на <img src="logo.png" alt="I-CAR" height="40"> -->
+    <a href="#top" class="logo" aria-label="I-CAR — на главную"><span class="logo__mark"><b>I</b>-CAR</span></a>
+
+    <nav class="navblocks" id="navblocks" aria-label="Разделы сайта">
+      <a class="navblock" href="#services"><svg class="ic"><use href="#i-wrench"/></svg>Услуги</a>
+      <a class="navblock" href="#how"><svg class="ic"><use href="#i-clock"/></svg>Как работаем</a>
+      <a class="navblock" href="#about"><svg class="ic"><use href="#i-car"/></svg>О нас</a>
+      <a class="navblock" href="#faq"><svg class="ic"><use href="#i-chat"/></svg>Вопросы</a>
+      <a class="navblock" href="#contacts"><svg class="ic"><use href="#i-phone"/></svg>Контакты</a>
+    </nav>
+
+    <div class="header__contacts">
+      <a class="header__phone" data-bind="phone" data-href="tel" href="tel:+7XXXXXXXXXX">+7 (XXX) XXX-XX-XX</a>
+      <a class="icon-btn header__msg" data-href="whatsapp" href="#" target="_blank" rel="noopener" aria-label="Написать в WhatsApp"><svg class="ic"><use href="#i-wa"/></svg></a>
+      <a class="icon-btn header__msg" data-href="telegram" href="#" target="_blank" rel="noopener" aria-label="Написать в Telegram"><svg class="ic"><use href="#i-tg"/></svg></a>
+      <a class="icon-btn header__call" data-href="tel" href="tel:+7XXXXXXXXXX" aria-label="Позвонить"><svg class="ic"><use href="#i-phone"/></svg></a>
+      <button class="icon-btn burger" id="burger" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<!-- Разделы на телефоне и планшете: та же полоса блоков под шапкой (заполняется скриптом) -->
+<div class="subnav" id="subnav"></div>
+
+<!-- Мобильное меню -->
+<div class="menu-overlay" id="menuOverlay"></div>
+<aside class="menu" id="menu" aria-label="Мобильное меню" aria-hidden="true">
+  <div class="menu__top">
+    <span class="logo__mark"><b>I</b>-CAR</span>
+    <button class="icon-btn" id="menuClose" type="button" aria-label="Закрыть меню"><svg class="ic"><use href="#i-close"/></svg></button>
+  </div>
+  <nav class="menu__nav">
+    <a href="#services">Услуги</a>
+    <a href="#how">Как работаем</a>
+    <a href="#about">О нас</a>
+    <a href="#faq">Вопросы</a>
+    <a href="#contacts">Контакты</a>
+  </nav>
+  <div>
+    <a class="menu__phone" data-bind="phone" data-href="tel" href="tel:+7XXXXXXXXXX">+7 (XXX) XXX-XX-XX</a>
+    <div class="menu__msg">
+      <a class="icon-btn" data-href="whatsapp" href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><svg class="ic"><use href="#i-wa"/></svg></a>
+      <a class="icon-btn" data-href="telegram" href="#" target="_blank" rel="noopener" aria-label="Telegram"><svg class="ic"><use href="#i-tg"/></svg></a>
+    </div>
+  </div>
+  <a class="btn btn--accent" href="#request">Вызвать мастера</a>
+</aside>
+
+<main id="top">
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="hero">
+  <div class="container hero__grid">
+    <div class="hero__text">
+      <div class="kicker reveal"><i></i>Выездной автосервис · <span data-bind="city">[ГОРОД]</span></div>
+      <h1 class="hero__title reveal" style="--d:.1s">
+        <span>Профессиональные</span>
+        <span>услуги автосервиса</span>
+        <span class="accent">на выезде</span>
+      </h1>
+      <p class="hero__slogan reveal" style="--d:.2s">Автомобиль не роскошь, а всего лишь средство для передвижения</p>
+      <div class="hero__actions reveal" style="--d:.3s">
+        <a class="btn btn--accent btn--pulse magnetic" href="#request">Вызвать мастера</a>
+        <a class="btn btn--ghost magnetic" data-href="tel" href="tel:+7XXXXXXXXXX"><svg class="ic"><use href="#i-phone"/></svg>Позвонить</a>
+      </div>
+      <ul class="hero__meta reveal" style="--d:.4s">
+        <li><svg class="ic"><use href="#i-clock"/></svg>Подача от 20 минут</li>
+        <li><svg class="ic"><use href="#i-tag"/></svg>Цена до начала работ</li>
+        <li><svg class="ic"><use href="#i-moon"/></svg>Ночью и в выходные</li>
+      </ul>
+    </div>
+
+    <div class="hero__visual">
+      <div class="stage" id="stage">
+        <div class="stage__spot"></div>
+        <div class="stage__floor"></div>
+
+        <!-- Запасной вариант без WebGL: плоский SVG-автомобиль.
+             Основной — интерактивная 3D-модель (скрипт внизу страницы рисует её поверх). -->
+        <div class="car" id="car">
+          <svg class="car-svg" viewBox="0 0 820 300" aria-hidden="true">
+            <defs>
+              <linearGradient id="cBody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#40444d"/><stop offset=".32" stop-color="#1b1d22"/><stop offset=".7" stop-color="#0c0d10"/><stop offset="1" stop-color="#040405"/>
+              </linearGradient>
+              <linearGradient id="cEdge" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" class="st-acc" stop-opacity="0"/><stop offset=".45" class="st-acc" stop-opacity=".7"/><stop offset=".68" stop-color="#ffffff" stop-opacity=".95"/><stop offset="1" class="st-acc" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="cGlass" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#58606b" stop-opacity=".9"/><stop offset=".6" stop-color="#14171b"/><stop offset="1" stop-color="#090a0c"/>
+              </linearGradient>
+              <filter id="cGlow" x="-30%" y="-200%" width="160%" height="500%">
+                <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <g id="cWheel">
+                <circle r="56" fill="#07080a"/><circle r="40" fill="#2a2e35"/>
+                <path d="M0,-8 L0,-37 M7.6,-2.5 L35.2,-11.4 M4.7,6.5 L21.7,29.9 M-4.7,6.5 L-21.7,29.9 M-7.6,-2.5 L-35.2,-11.4" stroke="#8a919c" stroke-width="4.5" stroke-linecap="round"/>
+                <circle r="9" fill="#24272d" stroke="#9aa1ab" stroke-width="2"/>
+              </g>
+            </defs>
+            <path d="M129,238 A61,61 0 0 1 251,238 Z" fill="#020203"/>
+            <path d="M549,238 A61,61 0 0 1 671,238 Z" fill="#020203"/>
+            <path d="M70,226 C62,198 66,170 98,160 L220,140 C280,96 340,78 420,76 C480,76 520,90 560,118 L700,150 C740,158 760,176 762,200 L762,224 C762,233 754,238 744,238 L672,238 A62,62 0 0 0 548,238 L252,238 A62,62 0 0 0 128,238 L86,238 C76,238 71,233 70,226 Z" fill="url(#cBody)"/>
+            <path d="M236,141 C290,104 344,90 418,89 C466,89 500,101 530,123 Z" fill="url(#cGlass)"/>
+            <path d="M100,162 L220,141 C280,97 340,79 420,77 C480,77 520,91 560,119 L700,151 C736,158 756,174 760,196" fill="none" stroke="url(#cEdge)" stroke-width="2.2" filter="url(#cGlow)"/>
+            <path d="M708,158 C732,161 752,171 759,184 L733,181 C724,172 716,165 708,158 Z" class="acc-fill" filter="url(#cGlow)"/>
+            <path d="M68,178 L102,165 L104,173 L70,188 Z" fill="#ff3b5c" filter="url(#cGlow)" opacity=".9"/>
+            <path d="M266,241 L536,241" class="acc-stroke" stroke-width="2.5" stroke-linecap="round" filter="url(#cGlow)"/>
+            <use href="#cWheel" transform="translate(190 238)"/>
+            <use href="#cWheel" transform="translate(610 238)"/>
+          </svg>
+        </div>
+
+        <!-- линии от бейджей к кузову: data-anchor — точка на SVG (820×300), data-anchor3d — точка на 3D-модели -->
+        <svg class="links" id="links" aria-hidden="true"></svg>
+
+        <div class="badge" style="--i:0;--x:44%;--y:7%;--xm:44%;--ym:7%" data-anchor="480,84" data-anchor3d="0.1,1.12,0"><i><svg class="ic"><use href="#i-diag"/></svg></i>Автодиагностика</div>
+        <div class="badge" style="--i:1;--x:15%;--y:24%;--xm:17%;--ym:24%" data-anchor="84,192" data-anchor3d="-1.8,0.55,0"><i><svg class="ic"><use href="#i-tow"/></svg></i>Эвакуатор</div>
+        <div class="badge" style="--i:2;--x:85%;--y:24%;--xm:80%;--ym:22%" data-anchor="664,146" data-anchor3d="1.25,0.8,0"><i><svg class="ic"><use href="#i-oil"/></svg></i>Замена масла</div>
+        <div class="badge" style="--i:3;--x:62%;--y:93%;--xm:62%;--ym:93%" data-anchor="610,238" data-anchor3d="0.97,0.28,0.84"><i><svg class="ic"><use href="#i-tire"/></svg></i>Шиномонтаж</div>
+      </div>
+
+      <!-- Конфигуратор 3D-машины (появляется, когда 3D загружена) -->
+      <div class="config" id="config">
+        <div class="config__colors" role="radiogroup" aria-label="Цвет кузова">
+          <button class="swatch is-active" type="button" role="radio" aria-checked="true"  aria-label="Графит"  style="--c:#3a3f47" data-color="#3a3f47"></button>
+          <button class="swatch" type="button" role="radio" aria-checked="false" aria-label="Неон"    style="--c:var(--accent)" data-color="accent"></button>
+          <button class="swatch" type="button" role="radio" aria-checked="false" aria-label="Белый"   style="--c:#e9ecef" data-color="#d9dde2"></button>
+          <button class="swatch" type="button" role="radio" aria-checked="false" aria-label="Красный" style="--c:#c3162a" data-color="#a0101f"></button>
+          <button class="swatch" type="button" role="radio" aria-checked="false" aria-label="Хаки"    style="--c:#56603f" data-color="#4a5436"></button>
+        </div>
+        <div class="chips">
+          <button class="chip" type="button" data-toggle="lights" aria-pressed="true">Фары</button>
+          <button class="chip" type="button" data-toggle="rotate" aria-pressed="true">Вращение</button>
+          <button class="chip chip--touch" type="button" data-toggle="drag" aria-pressed="false">360° пальцем</button>
+        </div>
+      </div>
+      <p class="config__hint"><span class="hint-mouse">Зажмите и потяните машину — осмотрите со всех сторон</span><span class="hint-touch">Включите «360° пальцем» и крутите машину</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Бегущая строка ===== -->
+<div class="marquee-wrap" aria-hidden="true">
+  <div class="marquee">
+    <div class="marquee__track" id="marquee">
+      <div class="marquee__item"><span>Автодиагностика</span><i>✦</i><span class="o">Эвакуатор</span><i>✦</i><span>Шиномонтаж</span><i>✦</i><span class="o">Замена масла</span><i>✦</i><span>Химчистка</span><i>✦</i><span class="o">Вскрытие замков</span><i>✦</i><span>24/7</span><i>✦</i></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== УСЛУГИ ===== -->
+<section class="section glow-r" id="services">
+  <div class="container">
+    <h2 class="giant" id="giant">Услуги</h2>
+    <div class="services__head">
+      <p class="eyebrow reveal">Что делаем на выезде</p>
+      <p class="lead reveal" style="--d:.1s">Большинство поломок решаем на месте — там, где машина остановилась. Нажмите на услугу, чтобы сразу оставить заявку.</p>
+    </div>
+
+    <div class="services" id="servicesList">
+      <a class="svc card tilt reveal" href="#request" data-service="Автодиагностика">
+        <div class="svc__top"><span class="svc__num">01</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
+        <div class="svc__icon"><svg class="ic"><use href="#i-diag"/></svg></div>
+        <h3>Автодиагностика</h3>
+        <p>Подключим компьютерный сканер и найдём причину поломки прямо на месте.</p>
+      </a>
+      <a class="svc card tilt reveal" style="--d:.08s" href="#request" data-service="Эвакуатор">
+        <div class="svc__top"><span class="svc__num">02</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
+        <div class="svc__icon"><svg class="ic"><use href="#i-tow"/></svg></div>
+        <h3>Эвакуатор</h3>
+        <p>Довезём машину куда скажете — в сервис, домой, на стоянку. Круглосуточно.</p>
+      </a>
+      <a class="svc card tilt reveal" style="--d:.16s" href="#request" data-service="Шиномонтаж">
+        <div class="svc__top"><span class="svc__num">03</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
+        <div class="svc__icon"><svg class="ic"><use href="#i-tire"/></svg></div>
+        <h3>Шиномонтаж</h3>
+        <p>Переобуем или отремонтируем колесо прямо на обочине.</p>
+      </a>
+      <a class="svc card tilt reveal" style="--d:.24s" href="#request" data-service="Замена масла">
+        <div class="svc__top"><span class="svc__num">04</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
+        <div class="svc__icon"><svg class="ic"><use href="#i-oil"/></svg></div>
+        <h3>Замена масла</h3>
+        <p>Приедем с маслом и фильтрами. Без записи и очереди в сервисе.</p>
+      </a>
+      <a class="svc card tilt reveal" href="#request" data-service="Химчистка салона">
+        <div class="svc__top"><span class="svc__num">05</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
+        <div class="svc__icon"><svg class="ic"><use href="#i-clean"/></svg></div>
+        <h3>Химчистка салона</h3>
+        <p>Уберём пятна и запахи — салон снова как из автосалона.</p>
+      </a>
+      <a class="svc card tilt reveal" style="--d:.08s" href="#request" data-service="Вскрытие замков">
+        <div class="svc__top"><span class="svc__num">06</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
+        <div class="svc__icon"><svg class="ic"><use href="#i-lock"/></svg></div>
+        <h3>Вскрытие замков</h3>
+        <p>Ключи внутри или сработала блокировка — откроем без повреждений.</p>
+      </a>
+      <a class="svc card tilt reveal" style="--d:.16s" href="#request" data-service="Консультация на дороге">
+        <div class="svc__top"><span class="svc__num">07</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
+        <div class="svc__icon"><svg class="ic"><use href="#i-chat"/></svg></div>
+        <h3>Консультация на дороге</h3>
+        <p>Подскажем, можно ли ехать дальше или лучше не рисковать.</p>
+      </a>
+    </div>
+    <div class="svc-progress" aria-hidden="true"><span id="svcBar"></span></div>
+  </div>
+</section>
+
+<!-- ===== ЦИФРЫ (значения — SITE.stats в начале файла) ===== -->
+<section class="section stats-section" id="stats">
+  <div class="container">
+    <div class="stats" id="statsList">
+      <div class="stat reveal"><div class="stat__num"><small></small><span>24</span><small>/7</small></div><p>работаем круглосуточно</p></div>
+      <div class="stat reveal" style="--d:.1s"><div class="stat__num"><small>от</small><span>20</span><small>мин</small></div><p>среднее время подачи</p></div>
+      <div class="stat reveal" style="--d:.2s"><div class="stat__num"><small>&gt;</small><span>1000</span><small></small></div><p>выездов</p></div>
+      <div class="stat reveal" style="--d:.3s"><div class="stat__num"><small></small><span>4,9</span><small></small></div><p>рейтинг клиентов</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== КАК РАБОТАЕМ ===== -->
+<section class="section glow-l" id="how">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow reveal">Как работаем</p>
+      <h2 class="h2 reveal" style="--d:.1s">От звонка до ремонта — <span class="accent">четыре шага</span></h2>
+    </div>
+    <ol class="steps">
+      <li class="step reveal">
+        <div class="step__icon"><svg class="ic"><use href="#i-phone"/></svg><span class="step__num">01</span></div>
+        <div><h3>Звонок или заявка</h3><p>Позвоните или оставьте заявку. Уточним, что случилось и где вы.</p></div>
+      </li>
+      <li class="step reveal" style="--d:.12s">
+        <div class="step__icon"><svg class="ic"><use href="#i-pin"/></svg><span class="step__num">02</span></div>
+        <div><h3>Мастер выезжает</h3><p>Едет с инструментом и расходниками. Подача — от 20 минут.</p></div>
+      </li>
+      <li class="step reveal" style="--d:.24s">
+        <div class="step__icon"><svg class="ic"><use href="#i-wrench"/></svg><span class="step__num">03</span></div>
+        <div><h3>Диагностика и ремонт на месте</h3><p>Находим причину, называем цену и чиним, не сходя с места.</p></div>
+      </li>
+      <li class="step reveal" style="--d:.36s">
+        <div class="step__icon"><svg class="ic"><use href="#i-card"/></svg><span class="step__num">04</span></div>
+        <div><h3>Оплата после работы</h3><p>Платите, когда машина снова на ходу: наличными, картой или переводом.</p></div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ===== ПОЧЕМУ МЫ ===== -->
+<section class="section glow-r" id="about">
+  <div class="container why">
+    <div class="why__intro">
+      <p class="eyebrow reveal">Почему мы</p>
+      <h2 class="h2 reveal" style="--d:.1s">Сервис, который <span class="accent">едет к вам</span></h2>
+      <p class="lead reveal" style="--d:.2s">I-CAR — выездные мастера с оборудованием в машине. Берём на себя то, ради чего обычно приходится ехать в сервис.</p>
+    </div>
+    <div class="why__grid">
+      <div class="why-card card tilt reveal">
+        <svg class="ic"><use href="#i-pin"/></svg>
+        <h3>Приезжаем туда, где вы сломались</h3>
+        <p>Трасса, двор, парковка у ТЦ — достаточно прислать геолокацию.</p>
+      </div>
+      <div class="why-card card tilt reveal" style="--d:.1s">
+        <svg class="ic"><use href="#i-car"/></svg>
+        <h3>Не нужно тащить машину в сервис</h3>
+        <p>Большинство работ делаем на месте — без эвакуатора и очередей.</p>
+      </div>
+      <div class="why-card card tilt reveal" style="--d:.2s">
+        <svg class="ic"><use href="#i-tag"/></svg>
+        <h3>Цена — до начала работ</h3>
+        <p>Мастер осматривает машину и называет сумму. По ходу она не растёт.</p>
+      </div>
+      <div class="why-card card tilt reveal" style="--d:.3s">
+        <svg class="ic"><use href="#i-moon"/></svg>
+        <h3>Работаем ночью и в выходные</h3>
+        <p>Поломки не ждут понедельника. Мы тоже.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ВОПРОСЫ (ответы — проверьте и поправьте под свои условия) ===== -->
+<section class="section glow-l" id="faq">
+  <div class="container why">
+    <div class="why__intro">
+      <p class="eyebrow reveal">Вопросы</p>
+      <h2 class="h2 reveal" style="--d:.1s">Коротко <span class="accent">о главном</span></h2>
+      <p class="lead reveal" style="--d:.2s">Не нашли ответ — позвоните, объясним за минуту.</p>
+    </div>
+    <div class="faq reveal">
+      <details open>
+        <summary>Сколько стоит выезд мастера?<span class="faq__plus"><svg class="ic"><use href="#i-plus"/></svg></span></summary>
+        <p class="faq__a">Зависит от услуги и расстояния. Ориентир назовём по телефону, точную сумму — после осмотра и до начала работ.</p>
+      </details>
+      <details>
+        <summary>Как быстро вы приедете?<span class="faq__plus"><svg class="ic"><use href="#i-plus"/></svg></span></summary>
+        <p class="faq__a">По городу — в среднем от 20 минут. За городом время зависит от расстояния — скажем сразу, когда вы позвоните.</p>
+      </details>
+      <details>
+        <summary>А если на месте не починить?<span class="faq__plus"><svg class="ic"><use href="#i-plus"/></svg></span></summary>
+        <p class="faq__a">Вызовем эвакуатор и довезём машину до сервиса, гаража или дома.</p>
+      </details>
+      <details>
+        <summary>Как оплатить?<span class="faq__plus"><svg class="ic"><use href="#i-plus"/></svg></span></summary>
+        <p class="faq__a">После работы — наличными, картой или переводом.</p>
+      </details>
+      <details>
+        <summary>Работаете ночью и в праздники?<span class="faq__plus"><svg class="ic"><use href="#i-plus"/></svg></span></summary>
+        <p class="faq__a">Да, круглосуточно и без выходных.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ФОРМА ЗАЯВКИ ===== -->
+<section class="section" id="request">
+  <div class="container">
+    <div class="request reveal" id="requestBox">
+      <div>
+        <p class="eyebrow">Заявка</p>
+        <h2 class="h2">Остались без машины? <span class="accent">Вызовите мастера</span></h2>
+        <p class="lead">Оставьте номер — перезвоним за 5 минут, уточним детали и отправим ближайшего мастера.</p>
+        <a class="request__phone" data-href="tel" href="tel:+7XXXXXXXXXX"><svg class="ic"><use href="#i-phone"/></svg><span data-bind="phone">+7 (XXX) XXX-XX-XX</span></a>
+        <div class="wheel3d" id="wheel3d" role="button" tabindex="0" aria-label="3D-колесо: нажмите, чтобы раскрутить"></div>
+      </div>
+
+      <div>
+        <form class="form" id="leadForm" novalidate>
+          <div class="field">
+            <label for="fName">Имя</label>
+            <input id="fName" name="name" type="text" autocomplete="name" placeholder="Как к вам обращаться">
+            <div class="field__err">Введите имя</div>
+          </div>
+          <div class="field">
+            <label for="fPhone">Телефон</label>
+            <input id="fPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 (___) ___-__-__">
+            <div class="field__err">Введите номер полностью: +7 и 10 цифр</div>
+          </div>
+          <div class="field">
+            <label for="fMsg">Что случилось</label>
+            <textarea id="fMsg" name="message" rows="4" placeholder="Например: не заводится, стою у ТЦ на Ленина"></textarea>
+            <div class="quick" id="quick" aria-label="Быстрый выбор">
+              <button type="button">Не заводится</button>
+              <button type="button">Пробил колесо</button>
+              <button type="button">Нужен эвакуатор</button>
+              <button type="button">Закрыл ключи</button>
+            </div>
+          </div>
+          <button class="btn btn--accent" id="submitBtn" type="submit">Отправить заявку</button>
+          <p class="consent">Нажимая кнопку, вы соглашаетесь на <a href="#">обработку персональных данных</a>.</p>
+        </form>
+
+        <div class="success" role="status" aria-live="polite">
+          <div class="success__icon"><svg class="ic"><use href="#i-check"/></svg></div>
+          <h3>Заявка принята</h3>
+          <p>Перезвоним в течение 5 минут.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ===== ФУТЕР ===== -->
+<footer class="footer" id="contacts">
+  <div class="container">
+    <div class="footer__grid">
+      <div>
+        <!-- ЛОГОТИП: замените span на <img src="logo.png" alt="I-CAR" height="40"> -->
+        <a href="#top" class="logo" aria-label="I-CAR — наверх"><span class="logo__mark"><b>I</b>-CAR</span></a>
+        <p class="footer__about">Выездной автосервис. Диагностика, ремонт и эвакуация — там, где вы остановились.</p>
+      </div>
+      <div>
+        <h4>Телефон</h4>
+        <a class="footer__phone" data-bind="phone" data-href="tel" href="tel:+7XXXXXXXXXX">+7 (XXX) XXX-XX-XX</a>
+        <div class="footer__msg">
+          <a class="icon-btn" data-href="whatsapp" href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><svg class="ic"><use href="#i-wa"/></svg></a>
+          <a class="icon-btn" data-href="telegram" href="#" target="_blank" rel="noopener" aria-label="Telegram"><svg class="ic"><use href="#i-tg"/></svg></a>
+        </div>
+      </div>
+      <div>
+        <h4>Зона выезда</h4>
+        <p class="footer__big" data-bind="zone">[ГОРОД] и пригород — до [XX] км</p>
+        <p style="color:var(--accent-2);margin-top:6px" data-bind="address">[АДРЕС БАЗЫ]</p>
+      </div>
+      <div>
+        <h4>Часы работы</h4>
+        <p class="footer__big">24/7</p>
+        <p style="color:var(--accent-2);margin-top:6px" data-bind="hours">Круглосуточно, без выходных</p>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© <span id="year">2026</span> I-CAR. Выездной автосервис.</span>
+      <a href="#">Политика обработки персональных данных</a>      <a class="icon-btn totop" href="#top" aria-label="Наверх"><svg class="ic"><use href="#i-arrow"/></svg></a>
+    </div>
+  </div>
+</footer>
+
+<!-- Мобильная панель вызова -->
+<div class="mbar" id="mbar">
+  <a class="btn btn--ghost" data-href="tel" href="tel:+7XXXXXXXXXX"><svg class="ic"><use href="#i-phone"/></svg>Позвонить</a>
+  <a class="btn btn--accent" href="#request">Заявка</a>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const html = document.documentElement;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const isPlaceholder = v => /X{2,}|\[/.test(v);
+
+  /* ---------- 1. Подстановка констант ---------- */
+  $$('[data-bind]').forEach(el => {
+    const v = SITE[el.dataset.bind];
+    if (v == null) return;
+    el.textContent = v;
+    el.classList.toggle('ph', isPlaceholder(v));
+  });
+  const hrefs = { tel: 'tel:' + SITE.phoneHref, whatsapp: SITE.whatsapp, telegram: SITE.telegram };
+  $$('[data-href]').forEach(el => { el.href = hrefs[el.dataset.href]; });
+  $('#year').textContent = new Date().getFullYear();
+
+  /* ---------- 2. Заставка: управление (3D-анимация — в модуле ниже) ---------- */
+  const ICAR = window.ICAR = { introDone: false, introStarted: false };
+  const intro = $('#intro');
+  const whenIntroDone = fn => ICAR.introDone ? fn() : addEventListener('icar:intro-done', fn, { once: true });
+  ICAR.finishIntro = () => {
+    if (ICAR.introDone) return;
+    ICAR.introDone = true;
+    html.classList.remove('intro-lock');
+    if (intro) { intro.classList.add('is-out'); setTimeout(() => intro.remove(), 1100); }
+    dispatchEvent(new Event('icar:intro-done'));
+  };
+  if (!html.classList.contains('has-intro')) { intro && intro.remove(); ICAR.finishIntro(); }
+  else {
+    $('#introSkip').addEventListener('click', ICAR.finishIntro);
+    // если 3D не запустилось — простая CSS-заставка
+    setTimeout(() => {
+      if (!ICAR.introStarted && !ICAR.introDone) { intro.classList.add('intro--css', 'is-final'); setTimeout(ICAR.finishIntro, 2400); }
+    }, 2500);
+    setTimeout(ICAR.finishIntro, 16000);
+  }
+  // прогресс загрузки 3D-модели (вызывает app3d.js)
+  ICAR.setLoad = p => {
+    const bar = $('#introBar'), pct = $('#introPct');
+    if (bar) bar.style.width = Math.round(p * 100) + '%';
+    if (pct) pct.textContent = `Загрузка 3D · ${Math.round(p * 100)}%`;
+  };
+
+  /* ---------- Вотермарк: заполняем полотно словом ---------- */
+  $('#watermark').innerHTML = Array(160).fill('<span>ASTRYXAS</span>').join('');
+
+  /* ---------- Разделы-блоки: копия для телефона и подсветка текущего раздела ---------- */
+  const subnav = $('#subnav');
+  const blocksCopy = $('#navblocks').cloneNode(true);
+  blocksCopy.removeAttribute('id');
+  subnav.append(blocksCopy);
+  const navLinks = $$('.navblock');
+  $$('a', subnav).forEach(a => a.addEventListener('click', () => setMenu && setMenu(false)));
+  const spy = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      navLinks.forEach(a => {
+        const on = a.getAttribute('href') === '#' + e.target.id;
+        a.classList.toggle('is-active', on);
+        if (on && a.closest('.subnav')) subnav.scrollTo({ left: a.offsetLeft - 16, behavior: 'smooth' });
+      });
+    });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  ['hero', 'services', 'how', 'about', 'faq', 'request', 'contacts'].forEach(id => { const s = document.getElementById(id); if (s) spy.observe(s); });
+
+  /* ---------- 3. Шапка, меню, прогресс, мобильная панель ---------- */
+  const header = $('#header'), progress = $('#progress'), mbar = $('#mbar'), heroEl = $('#hero');
+  let requestVisible = false, ticking = false;
+  const onScroll = () => {
+    ticking = false;
+    const y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
+    header.classList.toggle('is-scrolled', y > 10);
+    progress.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+    mbar.classList.toggle('is-on', y > heroEl.offsetHeight * .6 && !requestVisible);
+  };
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+  new IntersectionObserver(([e]) => { requestVisible = e.isIntersecting; onScroll(); }).observe($('#request'));
+  onScroll();
+
+  const burger = $('#burger'), menu = $('#menu');
+  const setMenu = open => {
+    document.body.classList.toggle('menu-open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+    burger.setAttribute('aria-expanded', open);
+    menu.setAttribute('aria-hidden', !open);
+  };
+  burger.addEventListener('click', () => setMenu(true));
+  $('#menuClose').addEventListener('click', () => setMenu(false));
+  $('#menuOverlay').addEventListener('click', () => setMenu(false));
+  $$('a', menu).forEach(a => a.addEventListener('click', () => setMenu(false)));
+  addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
+
+  /* ---------- 4. Появление блоков ---------- */
+  const revealIO = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      el.classList.add('is-in');
+      revealIO.unobserve(el);
+      // после анимации снимаем классы, чтобы не мешать hover-эффектам карточек
+      const delay = parseFloat(getComputedStyle(el).transitionDelay) || 0;
+      setTimeout(() => el.classList.remove('reveal', 'is-in'), 900 + delay * 1000);
+    });
+  }, { threshold: .15, rootMargin: '0px 0px -40px 0px' });
+  $$('.reveal').forEach(el => { if (!el.closest('#hero')) revealIO.observe(el); });
+
+  // гигантский заголовок — буквы переворачиваются по одной
+  const giant = $('#giant');
+  giant.innerHTML = [...giant.textContent.trim()].map((ch, i) => `<span style="--i:${i}">${ch}</span>`).join('');
+  giant.classList.add('split');
+  new IntersectionObserver(([e], o) => { if (e.isIntersecting) { giant.classList.add('is-on'); o.disconnect(); } }, { threshold: .3 }).observe(giant);
+
+  // бегущая строка: дублируем содержимое для бесшовной прокрутки
+  const marquee = $('#marquee');
+  marquee.innerHTML += marquee.innerHTML;
+
+  /* ---------- 5. Цифры: рендер из SITE.stats + счётчик ---------- */
+  const fmt = (n, dec) => n.toFixed(dec).replace('.', ',');
+  const statEls = $$('#statsList .stat');
+  SITE.stats.forEach((s, i) => {
+    const el = statEls[i]; if (!el) return;
+    const [pre, num, suf] = el.querySelectorAll('.stat__num > *');
+    pre.textContent = s.prefix; suf.textContent = s.suffix;
+    num.textContent = fmt(s.value, s.decimals);
+    num.dataset.to = s.value; num.dataset.dec = s.decimals;
+    el.querySelector('p').textContent = s.label;
+  });
+  const countIO = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      countIO.unobserve(e.target);
+      const num = e.target, to = +num.dataset.to, dec = +num.dataset.dec;
+      if (reduceMotion) return;
+      const t0 = performance.now(), dur = 1800;
+      const tick = t => {
+        const p = Math.min((t - t0) / dur, 1), k = 1 - Math.pow(1 - p, 3);
+        num.textContent = fmt(to * k, dec);
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  }, { threshold: .6 });
+  $$('#statsList .stat__num > span').forEach(n => countIO.observe(n));
+
+  /* ---------- 6. Hero: линии от бейджей к машине ---------- */
+  const stage = $('#stage'), car = $('#car'), links = $('#links');
+  const badges = $$('.badge', stage);
+  stage.classList.add('js-stage');
+  links.innerHTML = badges.map((b, i) => `<path pathLength="1" style="--i:${i}"/><circle style="--i:${i}" r="3.5"/>`).join('');
+  const paths = $$('path', links), dots = $$('circle', links);
+  Object.assign(ICAR, { stage, badges, whenIntroDone });
+  // pts — точки на машине в пикселях сцены; 3D-модуль вызывает это каждый кадр
+  ICAR.setAnchors = pts => {
+    links.setAttribute('viewBox', `0 0 ${stage.offsetWidth} ${stage.offsetHeight}`);
+    badges.forEach((b, i) => {
+      const [x2, y2] = pts[i], x1 = b.offsetLeft, y1 = b.offsetTop;
+      paths[i].setAttribute('d', `M${x1},${y1} Q${x1},${y2} ${x2.toFixed(1)},${y2.toFixed(1)}`);
+      dots[i].setAttribute('cx', x2.toFixed(1)); dots[i].setAttribute('cy', y2.toFixed(1));
+    });
+  };
+  const drawSvgLinks = () => {
+    if (stage.classList.contains('is-3d')) return;
+    ICAR.setAnchors(badges.map(b => {
+      const [ax, ay] = b.dataset.anchor.split(',').map(Number);
+      return [car.offsetLeft + ax / 820 * car.offsetWidth, car.offsetTop + ay / 300 * car.offsetHeight];
+    }));
+  };
+  drawSvgLinks();
+  let rT; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(drawSvgLinks, 120); });
+
+  whenIntroDone(() => {
+    $$('#hero .reveal').forEach(el => revealIO.observe(el));
+    requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.add('is-ready')));
+    setTimeout(() => stage.classList.add('is-drawn'), 3200);
+  });
+
+  // Параллакс плоской машины (для 3D не нужен — её крутят мышью)
+  const parallaxMQ = matchMedia('(min-width: 1025px) and (hover: hover) and (prefers-reduced-motion: no-preference)');
+  heroEl.addEventListener('mousemove', e => {
+    if (!parallaxMQ.matches || stage.classList.contains('is-3d')) return;
+    const r = heroEl.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+    stage.style.transform = `perspective(1000px) rotateX(${(-y * 8).toFixed(2)}deg) rotateY(${(x * 12).toFixed(2)}deg) translate3d(${(x * 16).toFixed(1)}px, ${(y * 10).toFixed(1)}px, 0)`;
+  });
+  heroEl.addEventListener('mouseleave', () => { stage.style.transform = ''; });
+
+  /* ---------- 7. Эффекты для мыши: свечение курсора, 3D-наклон карточек, магнитные кнопки ---------- */
+  if (finePointer && !reduceMotion) {
+    const glow = $('#cursorGlow');
+    let gx = innerWidth / 2, gy = innerHeight / 2, tx = gx, ty = gy, running = false;
+    const follow = () => {
+      gx += (tx - gx) * .15; gy += (ty - gy) * .15;
+      glow.style.transform = `translate(${gx}px, ${gy}px)`;
+      running = Math.abs(tx - gx) + Math.abs(ty - gy) > .5;
+      if (running) requestAnimationFrame(follow);
+    };
+    addEventListener('pointermove', e => {
+      tx = e.clientX; ty = e.clientY;
+      document.body.classList.add('has-cursor');
+      if (!running) { running = true; requestAnimationFrame(follow); }
+    }, { passive: true });
+    document.addEventListener('mouseleave', () => document.body.classList.remove('has-cursor'));
+
+    $$('.tilt').forEach(el => {
+      el.addEventListener('pointermove', e => {
+        const r = el.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+        el.style.setProperty('--mx', px * 100 + '%'); el.style.setProperty('--my', py * 100 + '%');
+        el.style.transform = `perspective(900px) rotateX(${((.5 - py) * 9).toFixed(2)}deg) rotateY(${((px - .5) * 11).toFixed(2)}deg) translateY(-4px)`;
+      });
+      el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+    });
+
+    $$('.magnetic').forEach(el => {
+      el.addEventListener('pointermove', e => {
+        const r = el.getBoundingClientRect();
+        el.style.transform = `translate(${((e.clientX - r.left - r.width / 2) * .22).toFixed(1)}px, ${((e.clientY - r.top - r.height / 2) * .35).toFixed(1)}px)`;
+      });
+      el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+    });
+  }
+
+  /* ---------- 8. Услуги: прогресс карусели и автозаполнение заявки ---------- */
+  const list = $('#servicesList'), bar = $('#svcBar');
+  const updBar = () => {
+    const max = list.scrollWidth - list.clientWidth;
+    bar.style.width = (max > 0 ? 20 + 80 * list.scrollLeft / max : 100) + '%';
+  };
+  list.addEventListener('scroll', updBar, { passive: true }); updBar();
+  const msg = $('#fMsg');
+  $$('.svc', list).forEach(c => c.addEventListener('click', () => {
+    if (!msg.value.trim() || msg.value.startsWith('Нужна услуга:')) msg.value = `Нужна услуга: ${c.dataset.service}. `;
+  }));
+  $$('#quick button').forEach(b => b.addEventListener('click', () => {
+    b.classList.toggle('is-on');
+    const picked = $$('#quick .is-on').map(x => x.textContent).join(', ');
+    msg.value = msg.value.replace(/^(Проблема: [^.]*\.\s?)?/, picked ? `Проблема: ${picked}. ` : '');
+  }));
+
+  /* ---------- 9. Форма: маска телефона и валидация ---------- */
+  const form = $('#leadForm'), phone = $('#fPhone'), name = $('#fName');
+  const digitsOf = v => {
+    let d = v.replace(/\D/g, '');
+    if (d[0] === '8') d = '7' + d.slice(1);
+    if (d[0] !== '7') d = '7' + d;
+    return d.slice(1, 11);
+  };
+  const formatPhone = d => {
+    let o = '+7';
+    if (d.length > 0) o += ' (' + d.slice(0, 3);
+    if (d.length >= 4) o += ') ' + d.slice(3, 6);
+    if (d.length >= 7) o += '-' + d.slice(6, 8);
+    if (d.length >= 9) o += '-' + d.slice(8, 10);
+    return o;
+  };
+  let prevDigits = '';
+  phone.addEventListener('input', e => {
+    let d = digitsOf(phone.value);
+    // стёрли символ форматирования (скобку, дефис) — стираем и предыдущую цифру
+    if (e.inputType === 'deleteContentBackward' && d === prevDigits) d = d.slice(0, -1);
+    phone.value = d.length || e.inputType?.startsWith('insert') ? formatPhone(d) : '';
+    prevDigits = d;
+    if (d.length === 10) setErr(phone, false);
+  });
+  phone.addEventListener('focus', () => { if (!phone.value) phone.value = '+7 '; });
+  phone.addEventListener('blur', () => { if (!digitsOf(phone.value).length) { phone.value = ''; prevDigits = ''; } });
+  name.addEventListener('input', () => { if (name.value.trim().length >= 2) setErr(name, false); });
+
+  function setErr(input, on) {
+    const f = input.closest('.field');
+    f.classList.remove('is-error'); void f.offsetWidth; // перезапуск анимации «тряски»
+    f.classList.toggle('is-error', on);
+    input.setAttribute('aria-invalid', on);
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const okName = name.value.trim().length >= 2;
+    const okPhone = digitsOf(phone.value).length === 10;
+    setErr(name, !okName); setErr(phone, !okPhone);
+    if (!okName) return name.focus();
+    if (!okPhone) return phone.focus();
+
+    const data = { name: name.value.trim(), phone: phone.value, message: msg.value.trim() };
+    // ЗАГЛУШКА: здесь отправка заявки на сервер / в Telegram-бота / CRM, например:
+    // fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    console.log('Заявка (заглушка):', data);
+
+    const btn = $('#submitBtn');
+    btn.classList.add('is-loading');
+    setTimeout(() => { btn.classList.remove('is-loading'); $('#requestBox').classList.add('is-sent'); }, 900);
+  });
+})();
+</script>
+
+<!-- ===== 3D: Three.js (машина, колесо, заставка) ===== -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module" src="app3d.js"></script>
+</body>
+</html>
