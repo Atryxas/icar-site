@@ -12,13 +12,13 @@
    Всё, что ниже, автоматически подставляется во все места страницы.
    ========================================================================== */
 const SITE = {
-  phone:      '+7 (XXX) XXX-XX-XX',          // номер для показа
-  phoneHref:  '+7XXXXXXXXXX',                // тот же номер без пробелов — для tel:
-  whatsapp:   'https://wa.me/7XXXXXXXXXX',   // ссылка на WhatsApp
-  telegram:   'https://t.me/XXXXXXXX',       // ссылка на Telegram
-  city:       '[ГОРОД]',                     // город
-  zone:       '[ГОРОД] и пригород — до [XX] км', // зона выезда
-  address:    '[АДРЕС БАЗЫ]',                // адрес
+  phone:      '+7 (999) 235-21-35',          // номер для показа (временный, заменить на номер Ильдара)
+  phoneHref:  '+79992352135',                // тот же номер без пробелов — для tel:
+  whatsapp:   'https://wa.me/79992352135',   // ссылка на WhatsApp
+  telegram:   'https://t.me/+79992352135',   // ссылка на Telegram (по номеру)
+  city:       'Санкт-Петербург',             // город
+  zone:       'Санкт-Петербург',             // зона выезда
+  address:    '',                            // адрес базы; пусто — строка не показывается
   hours:      'Круглосуточно, без выходных',
 
   intro: true,      // заставка при загрузке (машина → буквы I-CAR → колесо)
@@ -403,6 +403,17 @@ html:not(.has-intro) .intro{display:none}
 .svc h3{font-family:var(--ff-head);font-weight:700;font-size:19px;line-height:1.2;letter-spacing:-.02em;margin:0 0 10px;text-transform:uppercase}
 .svc p{margin:0;color:var(--accent-2);font-size:15px;line-height:1.5}
 .svc-progress{display:none}
+.svc__price{margin-top:18px;font-family:var(--ff-head);font-weight:700;font-size:16px;letter-spacing:-.02em;color:var(--accent);font-variant-numeric:tabular-nums}
+.svc__price small{font-family:var(--ff-text);font-size:13px;font-weight:600;color:var(--accent-2);letter-spacing:0}
+
+/* ===== ЦЕНЫ ===== */
+.prices{display:grid;grid-template-columns:1fr 1fr;gap:0 56px;border-top:1px solid var(--line)}
+.price-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 20px;padding:22px 0;border-bottom:1px solid var(--line);transition:padding .3s,background .3s}
+.price-row:hover{padding-left:10px;background:linear-gradient(90deg,var(--glow-soft),transparent 60%)}
+.price-row__name{font-family:var(--ff-head);font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:-.02em}
+.price-row__note{grid-column:1;color:var(--accent-2);font-size:14px}
+.price-row b{grid-column:2;grid-row:1 / span 2;font-family:var(--ff-head);font-size:20px;letter-spacing:-.03em;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.prices__foot{margin:20px 0 0;color:var(--accent-2);font-size:14px}
 
 /* ===== ЦИФРЫ ===== */
 .stats-section{padding:60px 0}
@@ -646,6 +657,9 @@ html:not(.has-intro) .intro{display:none}
   .step__icon .ic{width:26px;height:26px}
   .step h3{font-size:16px;margin-top:6px}
 
+  .prices{grid-template-columns:1fr}
+  .price-row{padding:18px 0}
+  .price-row b{font-size:17px}
   .why__grid{grid-template-columns:1fr;gap:14px}
   .why-card{padding:24px}
   .why-card .ic{margin-bottom:16px}
@@ -770,6 +784,7 @@ html:not(.has-intro) .intro{display:none}
 
     <nav class="navblocks" id="navblocks" aria-label="Разделы сайта">
       <a class="navblock" href="#services"><svg class="ic"><use href="#i-wrench"/></svg>Услуги</a>
+      <a class="navblock" href="#prices"><svg class="ic"><use href="#i-tag"/></svg>Цены</a>
       <a class="navblock" href="#how"><svg class="ic"><use href="#i-clock"/></svg>Как работаем</a>
       <a class="navblock" href="#about"><svg class="ic"><use href="#i-car"/></svg>О нас</a>
       <a class="navblock" href="#faq"><svg class="ic"><use href="#i-chat"/></svg>Вопросы</a>
@@ -777,10 +792,10 @@ html:not(.has-intro) .intro{display:none}
     </nav>
 
     <div class="header__contacts">
-      <a class="header__phone" data-bind="phone" data-href="tel" href="tel:+7XXXXXXXXXX">+7 (XXX) XXX-XX-XX</a>
+      <a class="header__phone" data-bind="phone" data-href="tel" href="tel:+79992352135">+7 (999) 235-21-35</a>
       <a class="icon-btn header__msg" data-href="whatsapp" href="#" target="_blank" rel="noopener" aria-label="Написать в WhatsApp"><svg class="ic"><use href="#i-wa"/></svg></a>
       <a class="icon-btn header__msg" data-href="telegram" href="#" target="_blank" rel="noopener" aria-label="Написать в Telegram"><svg class="ic"><use href="#i-tg"/></svg></a>
-      <a class="icon-btn header__call" data-href="tel" href="tel:+7XXXXXXXXXX" aria-label="Позвонить"><svg class="ic"><use href="#i-phone"/></svg></a>
+      <a class="icon-btn header__call" data-href="tel" href="tel:+79992352135" aria-label="Позвонить"><svg class="ic"><use href="#i-phone"/></svg></a>
       <button class="icon-btn burger" id="burger" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="menu"><span></span><span></span><span></span></button>
     </div>
   </div>
@@ -798,13 +813,14 @@ html:not(.has-intro) .intro{display:none}
   </div>
   <nav class="menu__nav">
     <a href="#services">Услуги</a>
+    <a href="#prices">Цены</a>
     <a href="#how">Как работаем</a>
     <a href="#about">О нас</a>
     <a href="#faq">Вопросы</a>
     <a href="#contacts">Контакты</a>
   </nav>
   <div>
-    <a class="menu__phone" data-bind="phone" data-href="tel" href="tel:+7XXXXXXXXXX">+7 (XXX) XXX-XX-XX</a>
+    <a class="menu__phone" data-bind="phone" data-href="tel" href="tel:+79992352135">+7 (999) 235-21-35</a>
     <div class="menu__msg">
       <a class="icon-btn" data-href="whatsapp" href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><svg class="ic"><use href="#i-wa"/></svg></a>
       <a class="icon-btn" data-href="telegram" href="#" target="_blank" rel="noopener" aria-label="Telegram"><svg class="ic"><use href="#i-tg"/></svg></a>
@@ -819,7 +835,7 @@ html:not(.has-intro) .intro{display:none}
 <section class="hero" id="hero">
   <div class="container hero__grid">
     <div class="hero__text">
-      <div class="kicker reveal"><i></i>Выездной автосервис · <span data-bind="city">[ГОРОД]</span></div>
+      <div class="kicker reveal"><i></i>Выездной автосервис · <span data-bind="city">Санкт-Петербург</span></div>
       <h1 class="hero__title reveal" style="--d:.1s">
         <span>Профессиональные</span>
         <span>услуги автосервиса</span>
@@ -828,7 +844,7 @@ html:not(.has-intro) .intro{display:none}
       <p class="hero__slogan reveal" style="--d:.2s">Автомобиль не роскошь, а всего лишь средство для передвижения</p>
       <div class="hero__actions reveal" style="--d:.3s">
         <a class="btn btn--accent btn--pulse magnetic" href="#request">Вызвать мастера</a>
-        <a class="btn btn--ghost magnetic" data-href="tel" href="tel:+7XXXXXXXXXX"><svg class="ic"><use href="#i-phone"/></svg>Позвонить</a>
+        <a class="btn btn--ghost magnetic" data-href="tel" href="tel:+79992352135"><svg class="ic"><use href="#i-phone"/></svg>Позвонить</a>
       </div>
       <ul class="hero__meta reveal" style="--d:.4s">
         <li><svg class="ic"><use href="#i-clock"/></svg>Подача от 20 минут</li>
@@ -931,45 +947,74 @@ html:not(.has-intro) .intro{display:none}
         <div class="svc__icon"><svg class="ic"><use href="#i-diag"/></svg></div>
         <h3>Автодиагностика</h3>
         <p>Подключим компьютерный сканер и найдём причину поломки прямо на месте.</p>
+        <span class="svc__price">от 1 500 ₽</span>
       </a>
       <a class="svc card tilt reveal" style="--d:.08s" href="#request" data-service="Эвакуатор">
         <div class="svc__top"><span class="svc__num">02</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
         <div class="svc__icon"><svg class="ic"><use href="#i-tow"/></svg></div>
         <h3>Эвакуатор</h3>
         <p>Довезём машину куда скажете — в сервис, домой, на стоянку. Круглосуточно.</p>
+        <span class="svc__price">от 2 500 ₽</span>
       </a>
       <a class="svc card tilt reveal" style="--d:.16s" href="#request" data-service="Шиномонтаж">
         <div class="svc__top"><span class="svc__num">03</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
         <div class="svc__icon"><svg class="ic"><use href="#i-tire"/></svg></div>
         <h3>Шиномонтаж</h3>
         <p>Переобуем или отремонтируем колесо прямо на обочине.</p>
+        <span class="svc__price">от 1 500 ₽</span>
       </a>
       <a class="svc card tilt reveal" style="--d:.24s" href="#request" data-service="Замена масла">
         <div class="svc__top"><span class="svc__num">04</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
         <div class="svc__icon"><svg class="ic"><use href="#i-oil"/></svg></div>
         <h3>Замена масла</h3>
         <p>Приедем с маслом и фильтрами. Без записи и очереди в сервисе.</p>
+        <span class="svc__price">от 3 000 ₽ <small>+ масло</small></span>
       </a>
       <a class="svc card tilt reveal" href="#request" data-service="Химчистка салона">
         <div class="svc__top"><span class="svc__num">05</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
         <div class="svc__icon"><svg class="ic"><use href="#i-clean"/></svg></div>
         <h3>Химчистка салона</h3>
         <p>Уберём пятна и запахи — салон снова как из автосалона.</p>
+        <span class="svc__price">от 4 500 ₽</span>
       </a>
       <a class="svc card tilt reveal" style="--d:.08s" href="#request" data-service="Вскрытие замков">
         <div class="svc__top"><span class="svc__num">06</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
         <div class="svc__icon"><svg class="ic"><use href="#i-lock"/></svg></div>
         <h3>Вскрытие замков</h3>
         <p>Ключи внутри или сработала блокировка — откроем без повреждений.</p>
+        <span class="svc__price">от 1 000 ₽</span>
       </a>
       <a class="svc card tilt reveal" style="--d:.16s" href="#request" data-service="Консультация на дороге">
         <div class="svc__top"><span class="svc__num">07</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
         <div class="svc__icon"><svg class="ic"><use href="#i-chat"/></svg></div>
         <h3>Консультация на дороге</h3>
         <p>Подскажем, можно ли ехать дальше или лучше не рисковать.</p>
+        <span class="svc__price">по телефону — бесплатно</span>
       </a>
     </div>
     <div class="svc-progress" aria-hidden="true"><span id="svcBar"></span></div>
+  </div>
+</section>
+
+<!-- ===== ЦЕНЫ (ориентиры по рынку выездной помощи в СПб, ноябрь 2026 — проверить с Ильдаром) ===== -->
+<section class="section glow-l" id="prices">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow reveal">Цены</p>
+      <h2 class="h2 reveal" style="--d:.1s">Примерные цены <span class="accent">в Петербурге</span></h2>
+      <p class="lead reveal" style="--d:.2s">Точную сумму мастер называет после осмотра — до начала работ. По ходу ремонта она не меняется.</p>
+    </div>
+    <div class="prices reveal">
+      <div class="price-row"><span class="price-row__name">Автодиагностика</span><span class="price-row__note">Компьютерный сканер, расшифровка ошибок</span><b>от 1 500 ₽</b></div>
+      <div class="price-row"><span class="price-row__name">Эвакуатор</span><span class="price-row__note">Легковой автомобиль по городу</span><b>от 2 500 ₽</b></div>
+      <div class="price-row"><span class="price-row__name">Шиномонтаж на месте</span><span class="price-row__note">Замена или ремонт колеса</span><b>от 1 500 ₽</b></div>
+      <div class="price-row"><span class="price-row__name">Замена масла</span><span class="price-row__note">Работа; масло и фильтр — по чеку</span><b>от 3 000 ₽</b></div>
+      <div class="price-row"><span class="price-row__name">Химчистка салона</span><span class="price-row__note">Легковой автомобиль, у дома или офиса</span><b>от 4 500 ₽</b></div>
+      <div class="price-row"><span class="price-row__name">Вскрытие замков</span><span class="price-row__note">Без повреждений, отечественные и иномарки</span><b>от 1 000 ₽</b></div>
+      <div class="price-row"><span class="price-row__name">Прикурить аккумулятор</span><span class="price-row__note">Запуск двигателя при севшей АКБ</span><b>от 1 000 ₽</b></div>
+      <div class="price-row"><span class="price-row__name">Консультация на дороге</span><span class="price-row__note">Подскажем, можно ли ехать дальше</span><b>бесплатно</b></div>
+    </div>
+    <p class="prices__foot reveal">Цены — для Санкт-Петербурга в пределах КАД. Выезд за КАД, запчасти и расходники оплачиваются отдельно.</p>
   </div>
 </section>
 
@@ -1057,7 +1102,7 @@ html:not(.has-intro) .intro{display:none}
     <div class="faq reveal">
       <details open>
         <summary>Сколько стоит выезд мастера?<span class="faq__plus"><svg class="ic"><use href="#i-plus"/></svg></span></summary>
-        <p class="faq__a">Зависит от услуги и расстояния. Ориентир назовём по телефону, точную сумму — после осмотра и до начала работ.</p>
+        <p class="faq__a">Зависит от услуги и расстояния — ориентиры в разделе «Цены». По телефону назовём примерную сумму, точную — после осмотра и до начала работ.</p>
       </details>
       <details>
         <summary>Как быстро вы приедете?<span class="faq__plus"><svg class="ic"><use href="#i-plus"/></svg></span></summary>
@@ -1087,7 +1132,7 @@ html:not(.has-intro) .intro{display:none}
         <p class="eyebrow">Заявка</p>
         <h2 class="h2">Остались без машины? <span class="accent">Вызовите мастера</span></h2>
         <p class="lead">Оставьте номер — перезвоним за 5 минут, уточним детали и отправим ближайшего мастера.</p>
-        <a class="request__phone" data-href="tel" href="tel:+7XXXXXXXXXX"><svg class="ic"><use href="#i-phone"/></svg><span data-bind="phone">+7 (XXX) XXX-XX-XX</span></a>
+        <a class="request__phone" data-href="tel" href="tel:+79992352135"><svg class="ic"><use href="#i-phone"/></svg><span data-bind="phone">+7 (999) 235-21-35</span></a>
         <div class="wheel3d" id="wheel3d" role="button" tabindex="0" aria-label="3D-колесо: нажмите, чтобы раскрутить"></div>
       </div>
 
@@ -1140,7 +1185,7 @@ html:not(.has-intro) .intro{display:none}
       </div>
       <div>
         <h4>Телефон</h4>
-        <a class="footer__phone" data-bind="phone" data-href="tel" href="tel:+7XXXXXXXXXX">+7 (XXX) XXX-XX-XX</a>
+        <a class="footer__phone" data-bind="phone" data-href="tel" href="tel:+79992352135">+7 (999) 235-21-35</a>
         <div class="footer__msg">
           <a class="icon-btn" data-href="whatsapp" href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><svg class="ic"><use href="#i-wa"/></svg></a>
           <a class="icon-btn" data-href="telegram" href="#" target="_blank" rel="noopener" aria-label="Telegram"><svg class="ic"><use href="#i-tg"/></svg></a>
@@ -1148,8 +1193,8 @@ html:not(.has-intro) .intro{display:none}
       </div>
       <div>
         <h4>Зона выезда</h4>
-        <p class="footer__big" data-bind="zone">[ГОРОД] и пригород — до [XX] км</p>
-        <p style="color:var(--accent-2);margin-top:6px" data-bind="address">[АДРЕС БАЗЫ]</p>
+        <p class="footer__big" data-bind="zone">Санкт-Петербург</p>
+        <p style="color:var(--accent-2);margin-top:6px" data-bind="address" hidden></p>
       </div>
       <div>
         <h4>Часы работы</h4>
@@ -1166,7 +1211,7 @@ html:not(.has-intro) .intro{display:none}
 
 <!-- Мобильная панель вызова -->
 <div class="mbar" id="mbar">
-  <a class="btn btn--ghost" data-href="tel" href="tel:+7XXXXXXXXXX"><svg class="ic"><use href="#i-phone"/></svg>Позвонить</a>
+  <a class="btn btn--ghost" data-href="tel" href="tel:+79992352135"><svg class="ic"><use href="#i-phone"/></svg>Позвонить</a>
   <a class="btn btn--accent" href="#request">Заявка</a>
 </div>
 
@@ -1184,6 +1229,7 @@ html:not(.has-intro) .intro{display:none}
     const v = SITE[el.dataset.bind];
     if (v == null) return;
     el.textContent = v;
+    el.hidden = !v;
     el.classList.toggle('ph', isPlaceholder(v));
   });
   const hrefs = { tel: 'tel:' + SITE.phoneHref, whatsapp: SITE.whatsapp, telegram: SITE.telegram };
@@ -1237,7 +1283,7 @@ html:not(.has-intro) .intro{display:none}
       });
     });
   }, { rootMargin: '-45% 0px -50% 0px' });
-  ['hero', 'services', 'how', 'about', 'faq', 'request', 'contacts'].forEach(id => { const s = document.getElementById(id); if (s) spy.observe(s); });
+  ['hero', 'services', 'prices', 'how', 'about', 'faq', 'request', 'contacts'].forEach(id => { const s = document.getElementById(id); if (s) spy.observe(s); });
 
   /* ---------- 3. Шапка, меню, прогресс, мобильная панель ---------- */
   const header = $('#header'), progress = $('#progress'), mbar = $('#mbar'), heroEl = $('#hero');
