@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>I-CAR выездной автосервис</title>
-<meta name="description" content="Выездной автосервис I-CAR: диагностика, эвакуатор, шиномонтаж, замена масла, вскрытие замков. Приедем от 20 минут, круглосуточно.">
+<meta name="description" content="Выездной автосервис I-CAR в Санкт-Петербурге: автодиагностика, шиномонтаж, эвакуатор, замена масла, вскрытие замков, химчистка автосалона, консультация в дороге.">
 
 <script>
 /* ==========================================================================
@@ -409,6 +409,7 @@ html:not(.has-intro) .intro{display:none}
 /* ===== ЦЕНЫ ===== */
 .prices{display:grid;grid-template-columns:1fr 1fr;gap:0 56px;border-top:1px solid var(--line)}
 .price-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 20px;padding:22px 0;border-bottom:1px solid var(--line);transition:padding .3s,background .3s}
+.price-row:last-child{grid-column:1 / -1} /* услуг нечётное число: последняя строка на всю ширину */
 .price-row:hover{padding-left:10px;background:linear-gradient(90deg,var(--glow-soft),transparent 60%)}
 .price-row__name{font-family:var(--ff-head);font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:-.02em}
 .price-row__note{grid-column:1;color:var(--accent-2);font-size:14px}
@@ -927,7 +928,7 @@ html:not(.has-intro) .intro{display:none}
 <div class="marquee-wrap" aria-hidden="true">
   <div class="marquee">
     <div class="marquee__track" id="marquee">
-      <div class="marquee__item"><span>Автодиагностика</span><i>✦</i><span class="o">Эвакуатор</span><i>✦</i><span>Шиномонтаж</span><i>✦</i><span class="o">Замена масла</span><i>✦</i><span>Химчистка</span><i>✦</i><span class="o">Вскрытие замков</span><i>✦</i><span>24/7</span><i>✦</i></div>
+      <div class="marquee__item"><span>Автодиагностика</span><i>✦</i><span class="o">Шиномонтаж</span><i>✦</i><span>Эвакуатор</span><i>✦</i><span class="o">Замена масла</span><i>✦</i><span>Вскрытие замков</span><i>✦</i><span class="o">Химчистка автосалона</span><i>✦</i><span>Консультация в дороге</span><i>✦</i></div>
     </div>
   </div>
 </div>
@@ -949,19 +950,19 @@ html:not(.has-intro) .intro{display:none}
         <p>Подключим компьютерный сканер и найдём причину поломки прямо на месте.</p>
         <span class="svc__price">от 1 500 ₽</span>
       </a>
-      <a class="svc card tilt reveal" style="--d:.08s" href="#request" data-service="Эвакуатор">
+      <a class="svc card tilt reveal" style="--d:.08s" href="#request" data-service="Шиномонтаж">
         <div class="svc__top"><span class="svc__num">02</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
-        <div class="svc__icon"><svg class="ic"><use href="#i-tow"/></svg></div>
-        <h3>Эвакуатор</h3>
-        <p>Довезём машину куда скажете — в сервис, домой, на стоянку. Круглосуточно.</p>
-        <span class="svc__price">от 2 500 ₽</span>
-      </a>
-      <a class="svc card tilt reveal" style="--d:.16s" href="#request" data-service="Шиномонтаж">
-        <div class="svc__top"><span class="svc__num">03</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
         <div class="svc__icon"><svg class="ic"><use href="#i-tire"/></svg></div>
         <h3>Шиномонтаж</h3>
         <p>Переобуем или отремонтируем колесо прямо на обочине.</p>
         <span class="svc__price">от 1 500 ₽</span>
+      </a>
+      <a class="svc card tilt reveal" style="--d:.16s" href="#request" data-service="Эвакуатор">
+        <div class="svc__top"><span class="svc__num">03</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
+        <div class="svc__icon"><svg class="ic"><use href="#i-tow"/></svg></div>
+        <h3>Эвакуатор</h3>
+        <p>Довезём машину куда скажете — в сервис, домой, на стоянку. Круглосуточно.</p>
+        <span class="svc__price">от 2 500 ₽</span>
       </a>
       <a class="svc card tilt reveal" style="--d:.24s" href="#request" data-service="Замена масла">
         <div class="svc__top"><span class="svc__num">04</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
@@ -970,24 +971,24 @@ html:not(.has-intro) .intro{display:none}
         <p>Приедем с маслом и фильтрами. Без записи и очереди в сервисе.</p>
         <span class="svc__price">от 3 000 ₽ <small>+ масло</small></span>
       </a>
-      <a class="svc card tilt reveal" href="#request" data-service="Химчистка салона">
+      <a class="svc card tilt reveal" href="#request" data-service="Вскрытие замков">
         <div class="svc__top"><span class="svc__num">05</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
-        <div class="svc__icon"><svg class="ic"><use href="#i-clean"/></svg></div>
-        <h3>Химчистка салона</h3>
-        <p>Уберём пятна и запахи — салон снова как из автосалона.</p>
-        <span class="svc__price">от 4 500 ₽</span>
-      </a>
-      <a class="svc card tilt reveal" style="--d:.08s" href="#request" data-service="Вскрытие замков">
-        <div class="svc__top"><span class="svc__num">06</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
         <div class="svc__icon"><svg class="ic"><use href="#i-lock"/></svg></div>
         <h3>Вскрытие замков</h3>
         <p>Ключи внутри или сработала блокировка — откроем без повреждений.</p>
         <span class="svc__price">от 1 000 ₽</span>
       </a>
-      <a class="svc card tilt reveal" style="--d:.16s" href="#request" data-service="Консультация на дороге">
+      <a class="svc card tilt reveal" style="--d:.08s" href="#request" data-service="Химчистка автосалона">
+        <div class="svc__top"><span class="svc__num">06</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
+        <div class="svc__icon"><svg class="ic"><use href="#i-clean"/></svg></div>
+        <h3>Химчистка автосалона</h3>
+        <p>Уберём пятна и запахи — салон снова как новый.</p>
+        <span class="svc__price">от 4 500 ₽</span>
+      </a>
+      <a class="svc card tilt reveal" style="--d:.16s" href="#request" data-service="Консультация в дороге">
         <div class="svc__top"><span class="svc__num">07</span><span class="svc__arrow"><svg class="ic"><use href="#i-arrow"/></svg></span></div>
         <div class="svc__icon"><svg class="ic"><use href="#i-chat"/></svg></div>
-        <h3>Консультация на дороге</h3>
+        <h3>Консультация в дороге</h3>
         <p>Подскажем, можно ли ехать дальше или лучше не рисковать.</p>
         <span class="svc__price">по телефону — бесплатно</span>
       </a>
@@ -996,7 +997,7 @@ html:not(.has-intro) .intro{display:none}
   </div>
 </section>
 
-<!-- ===== ЦЕНЫ (ориентиры по рынку выездной помощи в СПб, ноябрь 2026 — проверить с Ильдаром) ===== -->
+<!-- ===== ЦЕНЫ (услуги — по списку Ильдара; суммы — ориентиры по рынку СПб, ноябрь 2026, ещё не согласованы) ===== -->
 <section class="section glow-l" id="prices">
   <div class="container">
     <div class="section-head">
@@ -1006,13 +1007,12 @@ html:not(.has-intro) .intro{display:none}
     </div>
     <div class="prices reveal">
       <div class="price-row"><span class="price-row__name">Автодиагностика</span><span class="price-row__note">Компьютерный сканер, расшифровка ошибок</span><b>от 1 500 ₽</b></div>
+      <div class="price-row"><span class="price-row__name">Шиномонтаж</span><span class="price-row__note">Замена или ремонт колеса на месте</span><b>от 1 500 ₽</b></div>
       <div class="price-row"><span class="price-row__name">Эвакуатор</span><span class="price-row__note">Легковой автомобиль по городу</span><b>от 2 500 ₽</b></div>
-      <div class="price-row"><span class="price-row__name">Шиномонтаж на месте</span><span class="price-row__note">Замена или ремонт колеса</span><b>от 1 500 ₽</b></div>
       <div class="price-row"><span class="price-row__name">Замена масла</span><span class="price-row__note">Работа; масло и фильтр — по чеку</span><b>от 3 000 ₽</b></div>
-      <div class="price-row"><span class="price-row__name">Химчистка салона</span><span class="price-row__note">Легковой автомобиль, у дома или офиса</span><b>от 4 500 ₽</b></div>
       <div class="price-row"><span class="price-row__name">Вскрытие замков</span><span class="price-row__note">Без повреждений, отечественные и иномарки</span><b>от 1 000 ₽</b></div>
-      <div class="price-row"><span class="price-row__name">Прикурить аккумулятор</span><span class="price-row__note">Запуск двигателя при севшей АКБ</span><b>от 1 000 ₽</b></div>
-      <div class="price-row"><span class="price-row__name">Консультация на дороге</span><span class="price-row__note">Подскажем, можно ли ехать дальше</span><b>бесплатно</b></div>
+      <div class="price-row"><span class="price-row__name">Химчистка автосалона</span><span class="price-row__note">Легковой автомобиль, у дома или офиса</span><b>от 4 500 ₽</b></div>
+      <div class="price-row"><span class="price-row__name">Консультация в дороге</span><span class="price-row__note">Подскажем, можно ли ехать дальше</span><b>бесплатно</b></div>
     </div>
     <p class="prices__foot reveal">Цены — для Санкт-Петербурга в пределах КАД. Выезд за КАД, запчасти и расходники оплачиваются отдельно.</p>
   </div>
